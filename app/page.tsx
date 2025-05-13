@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { House, DER } from "@/types/grid";
 import ControlPanel from "@/components/ControlPanel";
 import HouseList from "@/components/HouseList";
 

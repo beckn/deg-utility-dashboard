@@ -3,7 +3,7 @@
 import React from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
-import { House } from "@/types/grid";
+import { House } from "@/types";
 import "leaflet/dist/leaflet.css";
 
 interface MapProps {
