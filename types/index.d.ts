@@ -1,11 +1,10 @@
-export interface DER {
+declare type DER {
   id: number;
   name: string;
   currentLoad: number;
   isEnabled: boolean;
 }
-
-export interface House {
+declare type House {
   id: number;
   name: string;
   currentLoad: number;
