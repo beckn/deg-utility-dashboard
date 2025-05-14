@@ -1,0 +1,458 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DEG Utility Dashboard API",
+    "version": "1.0.0",
+    "description": "API for managing utilities, substations, transformers, meters, households, DERs, and appliances."
+  },
+  "paths": {
+    "/api/utilities": {
+      "get": {
+        "summary": "Get a list of utilities",
+        "responses": {
+          "200": {
+            "description": "List of utilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Utility" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new utility",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Utility" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Utility created" }
+        }
+      }
+    },
+    "/api/utilities/{id}": {
+      "get": {
+        "summary": "Get a specific utility by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Utility", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Utility" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update a utility by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Utility" } } }
+        },
+        "responses": { "200": { "description": "Utility updated" } }
+      },
+      "delete": {
+        "summary": "Delete a utility by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Utility deleted" } }
+      }
+    },
+    "/api/substations": {
+      "get": {
+        "summary": "Get a list of substations",
+        "responses": {
+          "200": {
+            "description": "List of substations",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Substation" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new substation",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Substation" } } }
+        },
+        "responses": { "201": { "description": "Substation created" } }
+      }
+    },
+    "/api/substations/{id}": {
+      "get": {
+        "summary": "Get a specific substation by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Substation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Substation" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update a substation by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Substation" } } }
+        },
+        "responses": { "200": { "description": "Substation updated" } }
+      },
+      "delete": {
+        "summary": "Delete a substation by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Substation deleted" } }
+      }
+    },
+    "/api/transformers": {
+      "get": {
+        "summary": "Get a list of transformers",
+        "responses": {
+          "200": {
+            "description": "List of transformers",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Transformer" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new transformer",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Transformer" } } }
+        },
+        "responses": { "201": { "description": "Transformer created" } }
+      }
+    },
+    "/api/transformers/{id}": {
+      "get": {
+        "summary": "Get a specific transformer by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Transformer", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Transformer" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update a transformer by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Transformer" } } }
+        },
+        "responses": { "200": { "description": "Transformer updated" } }
+      },
+      "delete": {
+        "summary": "Delete a transformer by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Transformer deleted" } }
+      }
+    },
+    "/api/meters": {
+      "get": {
+        "summary": "Get a list of meters",
+        "responses": {
+          "200": {
+            "description": "List of meters",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Meter" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new meter",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Meter" } } }
+        },
+        "responses": { "201": { "description": "Meter created" } }
+      }
+    },
+    "/api/meters/{id}": {
+      "get": {
+        "summary": "Get a specific meter by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Meter", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Meter" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update a meter by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Meter" } } }
+        },
+        "responses": { "200": { "description": "Meter updated" } }
+      },
+      "delete": {
+        "summary": "Delete a meter by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Meter deleted" } }
+      }
+    },
+    "/api/energy-resources": {
+      "get": {
+        "summary": "Get a list of energy resources (households)",
+        "responses": {
+          "200": {
+            "description": "List of energy resources",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/EnergyResource" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new energy resource",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnergyResource" } } }
+        },
+        "responses": { "201": { "description": "Energy resource created" } }
+      }
+    },
+    "/api/energy-resources/{id}": {
+      "get": {
+        "summary": "Get a specific energy resource by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Energy resource", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnergyResource" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update an energy resource by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EnergyResource" } } }
+        },
+        "responses": { "200": { "description": "Energy resource updated" } }
+      },
+      "delete": {
+        "summary": "Delete an energy resource by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Energy resource deleted" } }
+      }
+    },
+    "/api/ders": {
+      "get": {
+        "summary": "Get a list of DERs",
+        "responses": {
+          "200": {
+            "description": "List of DERs",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DER" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new DER",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DER" } } }
+        },
+        "responses": { "201": { "description": "DER created" } }
+      }
+    },
+    "/api/ders/{id}": {
+      "get": {
+        "summary": "Get a specific DER by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "DER", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DER" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update a DER by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DER" } } }
+        },
+        "responses": { "200": { "description": "DER updated" } }
+      },
+      "delete": {
+        "summary": "Delete a DER by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "DER deleted" } }
+      }
+    },
+    "/api/appliances": {
+      "get": {
+        "summary": "Get a list of appliances",
+        "responses": {
+          "200": {
+            "description": "List of appliances",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Appliance" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new appliance",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appliance" } } }
+        },
+        "responses": { "201": { "description": "Appliance created" } }
+      }
+    },
+    "/api/appliances/{id}": {
+      "get": {
+        "summary": "Get a specific appliance by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Appliance", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appliance" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update an appliance by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appliance" } } }
+        },
+        "responses": { "200": { "description": "Appliance updated" } }
+      },
+      "delete": {
+        "summary": "Delete an appliance by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "Appliance deleted" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Utility": {
+        "type": "object",
+        "required": ["utilityId", "name", "region", "contactInfo", "regulatoryBody", "operationalStatus", "dateOfEstablishment"],
+        "properties": {
+          "utilityId": { "type": "string" },
+          "name": { "type": "string" },
+          "region": { "type": "string" },
+          "contactInfo": { "type": "string" },
+          "regulatoryBody": { "type": "string" },
+          "operationalStatus": { "type": "string" },
+          "dateOfEstablishment": { "type": "string", "format": "date" }
+        }
+      },
+      "Substation": {
+        "type": "object",
+        "required": ["substationId", "name", "location", "voltageCapacity", "operationalStatus", "utilityId", "dateOfCommissioning"],
+        "properties": {
+          "substationId": { "type": "string" },
+          "name": { "type": "string" },
+          "location": { "type": "string" },
+          "voltageCapacity": { "type": "string" },
+          "operationalStatus": { "type": "string" },
+          "utilityId": { "type": "string" },
+          "dateOfCommissioning": { "type": "string", "format": "date" }
+        }
+      },
+      "Transformer": {
+        "type": "object",
+        "required": ["transformerId", "type", "location", "capacity", "phaseType", "operationalStatus", "substationId", "installationDate"],
+        "properties": {
+          "transformerId": { "type": "string" },
+          "type": { "type": "string" },
+          "location": { "type": "string" },
+          "capacity": { "type": "string" },
+          "phaseType": { "type": "string" },
+          "operationalStatus": { "type": "string" },
+          "substationId": { "type": "string" },
+          "installationDate": { "type": "string", "format": "date" }
+        }
+      },
+      "Meter": {
+        "type": "object",
+        "required": ["meterId", "meterType", "location", "readingFrequency", "installationDate", "transformerId", "householdId", "status"],
+        "properties": {
+          "meterId": { "type": "string" },
+          "meterType": { "type": "string" },
+          "location": { "type": "string" },
+          "readingFrequency": { "type": "string" },
+          "installationDate": { "type": "string", "format": "date" },
+          "transformerId": { "type": "string" },
+          "householdId": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "EnergyResource": {
+        "type": "object",
+        "required": ["householdId", "address", "ownerName", "type", "numberOfOccupants", "meterId", "constructionYear", "gridConnectivityStatus"],
+        "properties": {
+          "householdId": { "type": "string" },
+          "address": { "type": "string" },
+          "ownerName": { "type": "string" },
+          "type": { "type": "string" },
+          "numberOfOccupants": { "type": "integer" },
+          "meterId": { "type": "string" },
+          "constructionYear": { "type": "integer" },
+          "gridConnectivityStatus": { "type": "string" }
+        }
+      },
+      "DER": {
+        "type": "object",
+        "required": ["derId", "type", "powerOutputCapacity", "status", "installationDate", "householdId", "applianceId"],
+        "properties": {
+          "derId": { "type": "string" },
+          "type": { "type": "string" },
+          "powerOutputCapacity": { "type": "string" },
+          "status": { "type": "string" },
+          "installationDate": { "type": "string", "format": "date" },
+          "householdId": { "type": "string" },
+          "applianceId": { "type": "string" }
+        }
+      },
+      "Appliance": {
+        "type": "object",
+        "required": ["applianceId", "type", "powerRating", "energyEfficiencyRating", "usageSchedule", "purchaseDate", "householdId"],
+        "properties": {
+          "applianceId": { "type": "string" },
+          "type": { "type": "string" },
+          "powerRating": { "type": "string" },
+          "energyEfficiencyRating": { "type": "string" },
+          "usageSchedule": { "type": "string" },
+          "purchaseDate": { "type": "string", "format": "date" },
+          "householdId": { "type": "string" },
+          "derId": { "type": "string", "nullable": true }
+        }
+      }
+    }
+  }
+}
