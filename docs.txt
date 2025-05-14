@@ -1,0 +1,410 @@
+﻿Developer Docs
+
+
+________________
+
+
+Utility
+ A Utility is the central organization responsible for generating or procuring electricity and distributing it to various regions. It oversees the overall management, monitoring, and coordination of the energy distribution infrastructure.
+
+
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/utilities
+	Get a list of utilities
+	POST
+	
+
+	/api/utilities
+	Creates a new utility
+	GET
+	
+
+	/api/utilities/:id
+	Get a specific utility by ID
+	PUT
+	
+
+	/api/utilities/:id
+	Update a utility by ID
+	DELETE
+	
+
+	/api/utilities/:id
+	Delete a utility by ID
+	Fields required:
+* Utility ID
+
+* Name
+
+* Region/Coverage Area
+
+* Contact Information
+
+* Regulatory Body
+
+* Operational Status
+
+* Date of Establishment
+
+Connections:
+   * A Utility manages multiple Substations.
+   * A Substation cannot be present without a utility. 
+
+________________
+
+
+
+
+
+
+
+
+
+
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/substations
+	Get a list of substations
+	POST
+	
+
+	/api/substations
+	Create a new substation
+	GET
+	
+
+	/api/substations/:id
+	Get a specific substation by ID
+	PUT
+	
+
+	/api/substations/:id
+	Update a substation by ID
+	DELETE
+	
+
+	/api/substations/:id
+	Delete a substation by ID
+	Substation
+ A Substation is an intermediate node in the power distribution system where voltage levels are transformed and electricity is routed to different localities. It steps down the voltage from transmission levels to distribution levels.
+Fields required:
+      * Substation ID
+
+      * Name
+
+      * Location
+
+      * Voltage CapacityOperational Status
+
+      * Associated Utility ID
+
+      * Date of Commissioning
+
+Connections:
+         * A Substation is associated with one Utility.
+         * A substation cannot be present without a utility.
+         * A Substation supplies power to multiple Transformers.
+
+________________
+
+
+Transformer
+ 
+A Transformer steps down the voltage from substations to levels suitable for end-user consumption. It is a critical component in ensuring the safe and efficient delivery of electricity to neighborhoods or buildings.
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/transformers
+	Get a list of transformers
+	POST
+	
+
+	/api/transformers
+	Create a new transformer
+	GET
+	
+
+	/api/transformers/:id
+	Get a specific transformer by ID
+	PUT
+	
+
+	/api/transformers/:id
+	Update a transformer by ID
+	DELETE
+	
+
+	/api/transformers/:id
+	Delete a transformer by ID
+	
+
+Fields required:
+            * Transformer ID
+
+            * Type (e.g., distribution, step-down)
+
+            * Location
+
+            * Capacity (kVA)
+
+            * Phase Type (single/three-phase)
+
+            * Operational Status
+
+            * Associated Substation ID
+
+            * Installation Date
+
+Connections:
+               * A Transformer is associated with one Substation.
+
+               * A Transformer is connected to multiple Meters.
+
+               * A Transformer can be created only if a substation is present.
+________________
+
+
+Meter
+ A Meter is an end-point device that measures the electricity consumption of a household. It records energy usage data for billing and monitoring purposes.
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/meters
+	Get a list of meters
+	POST
+	
+
+	/api/meters
+	Create a new meter 
+	GET
+	
+
+	/api/meters/:id
+	Get a specific meter by ID
+	PUT
+	
+
+	/api/meters/:id
+	Update a meter by ID
+	DELETE
+	
+
+	/api/meters/:id
+	Delete a meter by ID
+	Fields required:
+                  * Meter ID
+
+                  * Meter Type (analog/digital/smart)
+
+                  * Location
+
+                  * Reading Frequency
+
+                  * Installation Date
+
+                  * Associated Transformer ID
+
+                  * Household ID (linked one-to-one)
+
+                  * Status (active/inactive)
+
+Connections:
+                     * A Meter is linked to one Transformer.
+                     * Meter cannot exist without a Transformer. 
+                     * Each Meter is uniquely mapped to one Household.
+
+________________
+
+
+Energy Resource (Household)
+ A Household represents the end-user of electricity. It consumes power for daily living and may also act as a prosumer by generating electricity using DERs.
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/energy-resources
+	Get a list of energy resources (ER)
+	POST
+	
+
+	/api/energy-resources
+	Create a new ER
+	GET
+	
+
+	/api/energy-resources/:id
+	Get a specific ER by ID
+	PUT
+	
+
+	/api/energy-resources/:id
+	Update an ER by ID
+	DELETE
+	
+
+	/api/energy-resources/:id
+	Delete an ER by ID
+	
+
+Fields required:
+                        * Household ID
+
+                        * Address
+
+                        * Owner/Resident Name
+
+                        * Type (residential/commercial)
+
+                        * Number of Occupants
+
+                        * Associated Meter ID
+
+                        * Construction Year
+
+                        * Grid Connectivity Status
+
+Connections:
+                           * A Household is served by one Meter.
+
+                           * A Household contains multiple DERs.
+
+                           * A Household contains multiple Appliances.
+
+                           * A Household cannot be created if a meter is not present. 
+________________
+
+
+DER (Digital Energy Resource)
+ A DER is a decentralized energy generation unit within a household, such as solar panels or battery storage systems. It may also store or optimize energy consumption.
+
+
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/ders
+	Get a list of DERs
+	POST
+	
+
+	/api/ders
+	Create a new DER
+	GET
+	
+
+	/api/ders/:id
+	Get a specific DER by ID
+	PUT
+	
+
+	/api/ders/:id
+	Update a DER by ID
+	DELETE
+	
+
+	/api/ders/:id
+	Delete a DER by ID
+	Fields required:
+                              * DER ID
+
+                              * Type (solar, battery, etc.)
+
+                              * Power Output Capacity
+
+                              * Status (active/inactive)
+
+                              * Installation Date
+
+                              * Associated Household ID
+
+                              * Associated Appliance ID (one-to-one mapping)
+
+Connections:
+                                 * Each DER is part of one Household.
+                                 * Each DER is uniquely mapped to one Appliance.
+                                 * Each DER can exist only if a household is present
+
+________________
+
+
+Appliance
+ An Appliance is an electrical device used in a household, such as an air conditioner, refrigerator, or washing machine. It draws energy and may be monitored for consumption patterns.
+
+
+Method
+	Payload
+	URL
+	Description
+	GET
+	
+
+	/api/appliances
+	Get a list of appliances
+	POST
+	
+
+	/api/appliances
+	Create a new appliance
+	GET
+	
+
+	/api/appliances/:id
+	Get a specific appliance by ID
+	PUT
+	
+
+	/api/appliances/:id
+	Update an appliance by ID
+	DELETE
+	
+
+	/api/appliances/:id
+	Delete an appliance by ID
+	Fields required:
+                                    * Appliance ID
+
+                                    * Type (AC, fridge, etc.)
+
+                                    * Power Rating (Watts)
+
+                                    * Energy Efficiency Rating
+
+                                    * Usage Schedule
+
+                                    * Purchase Date
+
+                                    * Associated Household ID
+
+                                    * Associated DER ID (if any)
+
+Connections:
+                                       * An Appliance belongs to one Household.
+                                       * An Appliance cannot be present without a household. 
+                                       * An Appliance is linked one-to-one with a DER (if it's a smart or connected appliance).
+
+________________
