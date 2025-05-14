@@ -1,7 +1,7 @@
 // components/ControlPanel.tsx
 import React, { useState } from "react";
 import { X, Loader2 } from "lucide-react";
-import { House, DER } from "@/types";
+
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 

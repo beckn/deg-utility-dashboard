@@ -3,7 +3,6 @@
 import React from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
-import { House } from "@/types";
 import "leaflet/dist/leaflet.css";
 
 interface MapProps {
@@ -47,9 +46,14 @@ const Map: React.FC<MapProps> = ({ houses, onHouseSelect, selectedHouse }) => {
         className="h-full w-full"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
+        {houses.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-gray-500">Loading map...</p>
+          </div>
+        )}
         {houses.map((house) => (
           <Marker
             key={house.id}

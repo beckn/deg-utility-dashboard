@@ -1,6 +1,5 @@
 // components/HouseList.tsx
 import React from "react";
-import { House } from "@/types";
 
 interface HouseListProps {
   houses: House[];
