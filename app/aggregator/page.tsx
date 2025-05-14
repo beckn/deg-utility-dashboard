@@ -5,17 +5,32 @@ import dynamic from "next/dynamic";
 import ControlPanel from "@/components/ControlPanel";
 import HouseList from "@/components/HouseList";
 import { Menu } from "lucide-react";
+import { api } from "@/lib/api";
 
-// Dynamically import map to avoid SSR issues
+
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
 
 const Page = () => {
+
+  const { data, error } = api.useQuery("get", "/api/energy-resources", {
+    params: {
+      // @ts-ignorek
+      query: {
+        "pagination[page]": 1,
+        "pagination[pageSize]": 2,
+        populate: "ders,meter" 
+      }
+    },
+    cache: "force-cache"
+  })
+
   const [houses, setHouses] = useState<House[]>([]);
   const [selectedHouse, setSelectedHouse] = useState<House | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Mock data initialization
   useEffect(() => {
+
     const mockHouses: House[] = [
       {
         id: 1,
