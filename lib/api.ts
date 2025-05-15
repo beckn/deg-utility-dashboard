@@ -18,7 +18,8 @@ export function useMeterDataStream(meterId: string | number | undefined) {
         async function stream() {
             try {
                 const response = await fetch(`https://playground.becknprotocol.io/meter-data-simulator/meter-dataset-streamed/${meterId}`);
-                const reader = response?.body.getReader();
+                if (!response?.body) throw new Error('Response body is null');
+                const reader = response.body.getReader();
                 const decoder = new TextDecoder();
 
                 while (true) {
