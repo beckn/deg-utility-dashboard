@@ -1,99 +1,127 @@
 // app/utility/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Menu } from "lucide-react";
 import UtilityAgent from "@/components/UtilityAgent";
 import CircularProgress from "@/components/ui/CircularProgress";
 import StatusBadge from "@/components/ui/StatusBadge";
 import MapWrapper from "@/components/MapWrapper";
-
-interface Feeder {
-  id: string;
-  name: string;
-  region: string;
-  currentLoad: number;
-  status: "Critical" | "Warning" | "Normal";
-  coordinates: [number, number];
-}
-
-interface MetricData {
-  current: number;
-  peak: number;
-  total: number;
-}
+import { api } from "@/lib/api";
 
 const UtilityDashboard = () => {
-  const [feeders, setFeeders] = useState<Feeder[]>([]);
-  const [derUtilization, setDerUtilization] = useState<MetricData>({
-    current: 50,
-    peak: 93,
-    total: 100,
+  const { data, error, isLoading } = api.useQuery("get", "/api/utilities", {
+    params: {
+      query: {
+        "pagination[page]": 1,
+        "pagination[pageSize]": 100,
+        populate: "substations.transformers.meters.energyResource"
+      }
+    },
+    cache: "force-cache"
   });
-  const [systemLoad, setSystemLoad] = useState<MetricData>({
-    current: 50,
-    peak: 93,
-    total: 100,
-  });
-  const [mitigationEvents, setMitigationEvents] = useState<MetricData>({
-    current: 50,
-    peak: 93,
-    total: 100,
-  });
+
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [isAgentOpen, setIsAgentOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data initialization
-  useEffect(() => {
-    const mockFeeders: Feeder[] = [
-      {
-        id: "1",
-        name: "Central Feeder Hub",
-        region: "Central",
-        currentLoad: 92,
-        status: "Critical",
-        coordinates: [37.4419, -122.143],
-      },
-      {
-        id: "2",
-        name: "SoMA District Feeder",
-        region: "North",
-        currentLoad: 70,
-        status: "Warning",
-        coordinates: [37.4389, -122.1436],
-      },
-      {
-        id: "3",
-        name: "Mission District Feeder",
-        region: "West",
-        currentLoad: 80,
-        status: "Warning",
-        coordinates: [37.435, -122.144],
-      },
-      {
-        id: "4",
-        name: "Marina District Feeder",
-        region: "East",
-        currentLoad: 50,
-        status: "Normal",
-        coordinates: [37.438, -122.146],
-      },
-      {
-        id: "5",
-        name: "Sunset District Feeder",
-        region: "Centre",
-        currentLoad: 30,
-        status: "Normal",
-        coordinates: [37.436, -122.147],
-      },
-    ];
+  // Process API data into feeders for display
+  const { feeders, systemMetrics } = useMemo(() => {
+    if (!data?.data) {
+      return { feeders: [], systemMetrics: { der: { current: 0, peak: 0, total: 0 }, load: { current: 0, peak: 0, total: 0 }, mitigation: { current: 0, peak: 0, total: 0 } } };
+    }
 
-    setTimeout(() => {
-      setFeeders(mockFeeders);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    const processedFeeders: FeederData[] = [];
+    let totalCapacity = 0;
+    let totalCurrentLoad = 0;
+    let totalActiveMeters = 0;
+    let totalMeters = 0;
+
+    data.data.forEach((utility) => {
+      utility.attributes.substations.data.forEach((substation) => {
+        const substationMeters: ProcessedMeter[] = [];
+        let substationLoad = 0;
+        let substationCapacity = 0;
+
+        substation.attributes.transformers.data.forEach((transformer) => {
+          transformer.attributes.meters.data.forEach((meter) => {
+            const currentLoad = Math.round(
+              meter.attributes.max_capacity_KW * 
+              meter.attributes.consumptionLoadFactor * 
+              (0.3 + Math.random() * 0.6) // Random load between 30-90%
+            );
+            
+            substationLoad += currentLoad;
+            substationCapacity += meter.attributes.max_capacity_KW;
+            totalMeters++;
+
+            if (meter.attributes.energyResource) {
+              totalActiveMeters++;
+            }
+
+            const meterLoadPercentage = (currentLoad / meter.attributes.max_capacity_KW) * 100;
+            const meterStatus: "Critical" | "Warning" | "Normal" = 
+              meterLoadPercentage > 85 ? "Critical" : 
+              meterLoadPercentage > 60 ? "Warning" : "Normal";
+
+            substationMeters.push({
+              id: meter.id,
+              code: meter.attributes.code,
+              currentLoad,
+              capacity: meter.attributes.max_capacity_KW,
+              status: meterStatus,
+              energyResourceName: meter.attributes.energyResource?.data.attributes.name
+            });
+          });
+        });
+
+        totalCapacity += substationCapacity;
+        totalCurrentLoad += substationLoad;
+
+        const loadPercentage = substationCapacity > 0 ? (substationLoad / substationCapacity) * 100 : 0;
+        const status: "Critical" | "Warning" | "Normal" = 
+          loadPercentage > 85 ? "Critical" : 
+          loadPercentage > 60 ? "Warning" : "Normal";
+
+        processedFeeders.push({
+          id: substation.id.toString(),
+          name: substation.attributes.name,
+          region: substation.attributes.city,
+          currentLoad: Math.round(loadPercentage),
+          status,
+          coordinates: [
+            parseFloat(substation.attributes.latitude),
+            parseFloat(substation.attributes.longtitude)
+          ],
+          meters: substationMeters
+        });
+      });
+    });
+
+    // Calculate system metrics
+    const overallLoadPercentage = totalCapacity > 0 ? (totalCurrentLoad / totalCapacity) * 100 : 0;
+    const derUtilizationPercentage = totalMeters > 0 ? (totalActiveMeters / totalMeters) * 100 : 0;
+    const mitigationPercentage = Math.round(25 + Math.random() * 25); // Simulated mitigation events
+
+    const systemMetrics = {
+      der: {
+        current: Math.round(derUtilizationPercentage),
+        peak: Math.round(derUtilizationPercentage + 10 + Math.random() * 20),
+        total: 100
+      },
+      load: {
+        current: Math.round(overallLoadPercentage),
+        peak: Math.round(Math.max(overallLoadPercentage + 10, 95)),
+        total: 100
+      },
+      mitigation: {
+        current: mitigationPercentage,
+        peak: Math.round(mitigationPercentage + 15),
+        total: 100
+      }
+    };
+
+    return { feeders: processedFeeders, systemMetrics };
+  }, [data]);
 
   const filterTabs = ["All", "Substations", "Feeders", "Households", "DER's"];
 
@@ -103,6 +131,20 @@ const UtilityDashboard = () => {
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading utility data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50">
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center text-red-600">
+            <p className="text-lg font-semibold">Error loading data</p>
+            <p className="text-sm">{error.message}</p>
           </div>
         </div>
       </div>
@@ -112,7 +154,7 @@ const UtilityDashboard = () => {
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-white via-blue-100 to-blue-200">
       {/* Header */}
-      <header className="flex items-center justify-between p-4  h-16">
+      <header className="flex items-center justify-between p-4 h-16">
         <div className="flex items-center space-x-3">
           <Menu className="w-6 h-6 text-gray-700" />
           <h1 className="text-lg font-semibold text-gray-800">
@@ -124,14 +166,13 @@ const UtilityDashboard = () => {
         </div>
       </header>
 
-      <div className="h-[calc(100vh-4rem)] flex ">
-        {/* Left Sidebar - Fixed Width */}
+      <div className="h-[calc(100vh-4rem)] flex">
+        {/* Left Sidebar */}
         <div className="w-80 shadow-lg flex flex-col bg-blue-100/50 p-2 m-4 rounded-lg">
-          {/* Navigation Tabs */}
           <div className="p-2">
             <div className="flex space-x-2">
               <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
-                Feeder Summary
+                Substation Summary
               </button>
               <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">
                 Audit Trail
@@ -139,12 +180,11 @@ const UtilityDashboard = () => {
             </div>
           </div>
 
-          {/* Scrollable Feeder List */}
-          <div className="flex-1 overflow-y-auto p-4 ">
+          <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-3">
               {feeders.length > 0 ? (
                 feeders.map((feeder) => (
-                  <div key={feeder.id} className=" p-3 rounded-lg bg-blue-50">
+                  <div key={feeder.id} className="p-3 rounded-lg bg-blue-50">
                     <h3 className="font-semibold text-gray-800 text-sm mb-2">
                       {feeder.name}
                     </h3>
@@ -155,9 +195,11 @@ const UtilityDashboard = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Current Load</span>
-                        <span className="font-medium">
-                          {feeder.currentLoad}%
-                        </span>
+                        <span className="font-medium">{feeder.currentLoad}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Active Meters</span>
+                        <span className="font-medium">{feeder.meters.length}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Status</span>
@@ -168,7 +210,7 @@ const UtilityDashboard = () => {
                 ))
               ) : (
                 <div className="text-gray-500 text-sm">
-                  No feeders available
+                  No substations available
                 </div>
               )}
             </div>
@@ -187,32 +229,24 @@ const UtilityDashboard = () => {
                 </h3>
                 <div className="flex justify-center mb-2">
                   <CircularProgress
-                    percentage={derUtilization.current}
+                    percentage={systemMetrics.der.current}
                     color="#10b981"
                     size={80}
                     strokeWidth={6}
                   >
                     <span className="text-lg font-bold text-gray-800">
-                      {derUtilization.current}%
+                      {systemMetrics.der.current}%
                     </span>
                   </CircularProgress>
                 </div>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Current</span>
-                    <span className="font-medium">
-                      {derUtilization.current} %
-                    </span>
+                    <span className="font-medium">{systemMetrics.der.current}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Available</span>
-                    <span className="font-medium">{derUtilization.peak} %</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total</span>
-                    <span className="font-medium">
-                      {derUtilization.total} %
-                    </span>
+                    <span className="text-gray-600">Peak</span>
+                    <span className="font-medium">{systemMetrics.der.peak}%</span>
                   </div>
                 </div>
               </div>
@@ -224,24 +258,24 @@ const UtilityDashboard = () => {
                 </h3>
                 <div className="flex justify-center mb-2">
                   <CircularProgress
-                    percentage={systemLoad.current}
+                    percentage={systemMetrics.load.current}
                     color="#3b82f6"
                     size={80}
                     strokeWidth={6}
                   >
                     <span className="text-lg font-bold text-gray-800">
-                      {systemLoad.current}%
+                      {systemMetrics.load.current}%
                     </span>
                   </CircularProgress>
                 </div>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Current</span>
-                    <span className="font-medium">{systemLoad.current} %</span>
+                    <span className="font-medium">{systemMetrics.load.current}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Peak</span>
-                    <span className="font-medium">{systemLoad.peak} %</span>
+                    <span className="font-medium">{systemMetrics.load.peak}%</span>
                   </div>
                 </div>
               </div>
@@ -253,28 +287,24 @@ const UtilityDashboard = () => {
                 </h3>
                 <div className="flex justify-center mb-2">
                   <CircularProgress
-                    percentage={mitigationEvents.current}
+                    percentage={systemMetrics.mitigation.current}
                     color="#f59e0b"
                     size={80}
                     strokeWidth={6}
                   >
                     <span className="text-lg font-bold text-gray-800">
-                      {mitigationEvents.current}%
+                      {systemMetrics.mitigation.current}%
                     </span>
                   </CircularProgress>
                 </div>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Current</span>
-                    <span className="font-medium">
-                      {mitigationEvents.current} %
-                    </span>
+                    <span className="font-medium">{systemMetrics.mitigation.current}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Peak</span>
-                    <span className="font-medium">
-                      {mitigationEvents.peak} %
-                    </span>
+                    <span className="font-medium">{systemMetrics.mitigation.peak}%</span>
                   </div>
                 </div>
               </div>
@@ -283,16 +313,14 @@ const UtilityDashboard = () => {
 
           {/* Map Section */}
           <div className="flex-1 p-4 pt-0">
-            <div className=" rounded-lg shadow-sm h-full flex flex-col">
-              {/* Map Header */}
+            <div className="rounded-lg shadow-sm h-full flex flex-col">
               <div className="p-3">
                 <div className="flex items-center justify-between">
                   <select
-                    value="Stanford University"
-                    onChange={() => {}}
-                    className="px-3 py-1.5  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    value="San Francisco"
+                    className="px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    <option>Stanford University</option>
+                    <option>San Francisco</option>
                   </select>
                   <div className="flex space-x-2">
                     {filterTabs.map((tab) => (
@@ -311,17 +339,13 @@ const UtilityDashboard = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Map */}
-              {/* <div className="flex-1 "> */}
               <MapWrapper feeders={feeders} />
-              {/* </div> */}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Utility Agent - Bottom Right Corner */}
+      {/* Utility Agent */}
       <div className="fixed bottom-6 right-6">
         <button
           onClick={() => setIsAgentOpen(!isAgentOpen)}
@@ -334,7 +358,6 @@ const UtilityDashboard = () => {
         </button>
       </div>
 
-      {/* Utility Agent Chat */}
       {isAgentOpen && <UtilityAgent onClose={() => setIsAgentOpen(false)} />}
     </div>
   );
