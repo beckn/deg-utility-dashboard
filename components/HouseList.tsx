@@ -1,6 +1,18 @@
 // components/HouseList.tsx
+import { useMeterDataStream } from "@/lib/api";
 import { useSimplifiedData } from "@/lib/useSimplifiedData";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import React from "react";
+import { SimplifiedItem } from "@/lib/convetor";
+import { Card, CardContent, CardFooter } from "./ui/card";
+import { Switch } from "./ui/switch";
 
 const HouseList = () => {
   const { data: houses, selectedHouse, setSelectedHouse } = useSimplifiedData()
@@ -46,41 +58,90 @@ const HouseList = () => {
       <div className="flex-1 overflow-y-auto scroll-smooth">
         <div className="space-y-4 p-2">
           {houses.map((house) => (
-            <div
+            <Dialog
               key={house.id}
-              onClick={() => setSelectedHouse(house)}
-              className={`p-4 bg-white/90 rounded-lg cursor-pointer transition-all hover:bg-white shadow-sm ${selectedHouse?.id === house.id ? "ring-2 ring-blue-500 scale-105" : ""
-                }`}
             >
-              <h3 className="font-semibold text-gray-800 mb-2">{house.name}</h3>
-              <div className="space-y-1 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Meter Code</span>
-                  <span className="font-medium">{house.meterCode} MW</span>
+              <DialogTrigger asChild>
+                <div
+                  onClick={() => setSelectedHouse(house)}
+                  className={`p-4 bg-white/90 rounded-lg cursor-pointer transition-all hover:bg-white shadow-sm ${selectedHouse?.id === house.id ? "ring-2 ring-blue-500 scale-105" : ""
+                    }`}
+                >
+                  <div className="font-semibold text-gray-800 mb-2 flex justify-between">
+                    {house.name}
+                    <LiveScore id={house.id} />
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Meter Code</span>
+                      <span className="font-medium">{house.meterCode} kW</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Max Capacity</span>
+                      <span className="font-medium">{house.max_capacity_KW} kW</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total DER's</span>
+                      <span className="font-medium">{house.ders.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Type</span>
+                      <span className="font-medium">{house.type}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Status</span>
+                      {getStatusColor(1, house.max_capacity_KW ?? 1)}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Max Capacity</span>
-                  <span className="font-medium">{house.max_capacity_KW} MW</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total DER's</span>
-                  <span className="font-medium">{house.ders.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Type</span>
-                  <span className="font-medium">{house.type}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Status</span>
-                  {getStatusColor(1, house.max_capacity_KW ?? 1)}
-                </div>
-              </div>
-            </div>
+
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>List of DER</DialogTitle>
+                  {
+                    house.ders.map((der, i) => (
+                      <DERComponent count={i} key={der.id} der={der} />
+                    ))
+                  }
+                  <CardFooter className="gap-3">
+                    <span>
+                      Turn everything on/off
+                    </span>
+                    <Switch />
+                  </CardFooter>
+                </DialogHeader>
+              </DialogContent>
+            </Dialog>
           ))}
         </div>
       </div>
     </div>
   );
 };
+
+const LiveScore = ({ id }: { id: string | number }) => {
+  const { data, error } = useMeterDataStream(id)
+  return (
+    <Card >
+      <div>
+        <span className="text-sm">Load</span>
+        <span className="font-medium text-sm ps-2">{data} kW</span>
+      </div>
+    </Card>
+  );
+}
+
+const DERComponent = ({ der, count }: { der: SimplifiedItem["ders"][0], count: number }) => {
+  return (
+    <Card>
+      <CardFooter className="justify-between">
+        <span>{count}</span>
+        <span>{der.id}</span>
+        <Switch />
+      </CardFooter>
+    </Card>
+  );
+}
 
 export default HouseList;
