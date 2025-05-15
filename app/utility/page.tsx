@@ -52,8 +52,8 @@ const UtilityDashboard = () => {
         if (data.success && data.data) {
           setGridLoadData(data.data);
           
-          // Only call chat API if we haven't done it yet
-          if (!chatInitiated) {
+          // Only initiate chat if we haven't done it yet and there's no existing conversation
+          if (!chatInitiated && !isAgentOpen) {
             try {
               const chatResponse = await fetch('https://api-deg-agents.becknprotocol.io/chat', {
                 method: 'POST',
@@ -70,17 +70,13 @@ const UtilityDashboard = () => {
               });
               
               const chatData = await chatResponse.json();
-              console.log("Chat Response:", chatData);
               setInitialChatMessage(chatData.message || chatData.response.message || chatData);
               setChatInitiated(true);
-              // Set isAgentOpen after we have the message
               setIsAgentOpen(true);
             } catch (chatError) {
               console.error('Error initiating chat:', chatError);
-              setInitialChatMessage("I've detected that transformer TR-1234 has exceeded its load capacity by 15%. Would you like me to initiate the DFP (Demand Flexibility Program) to reduce the load? This will help prevent potential equipment damage and maintain grid stability.");
+              // Don't set fallback message or open chat if API fails
               setChatInitiated(true);
-              // Set isAgentOpen after we have the fallback message
-              setIsAgentOpen(true);
             }
           }
         }
@@ -94,7 +90,7 @@ const UtilityDashboard = () => {
     const interval = setInterval(checkGridLoad, 5000);
 
     return () => clearInterval(interval);
-  }, [chatInitiated]);
+  }, [chatInitiated, isAgentOpen]); // Added isAgentOpen to dependencies
 
   // Process API data into feeders for display
   const { feeders, systemMetrics } = useMemo(() => {
