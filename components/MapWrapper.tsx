@@ -11,6 +11,7 @@ interface Feeder {
   currentLoad: number;
   status: "Critical" | "Warning" | "Normal";
   coordinates: [number, number];
+  meters: ProcessedMeter[];
 }
 
 interface MapWrapperProps {
