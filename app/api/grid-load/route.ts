@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setData, getData } from '@/lib/cache';
+import { setData, getData, clearData } from '@/lib/cache';
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,6 +17,10 @@ export async function GET() {
         if (!data) {
             return NextResponse.json({ success: false }, { status: 404 });
         }
+
+        // Clear the cache after retrieving the data
+        clearData('grid-load');
+
         return NextResponse.json({ success: true, data });
     } catch (error) {
         return NextResponse.json({ success: false }, { status: 500 });

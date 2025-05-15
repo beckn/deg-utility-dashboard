@@ -5,3 +5,4 @@ const cache = new NodeCache({ stdTTL: 3600 });
 
 export const setData = (key: string, value: any) => cache.set(key, value);
 export const getData = (key: string) => cache.get(key);
+export const clearData = (key: string) => cache.del(key);
