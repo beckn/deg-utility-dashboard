@@ -1,28 +1,38 @@
 // components/HouseList.tsx
+import { useSimplifiedData } from "@/lib/useSimplifiedData";
 import React from "react";
 
-interface HouseListProps {
-  houses: House[];
-  onHouseSelect: (house: House) => void;
-  selectedHouse: House | null;
-}
+const HouseList = () => {
+  const { data: houses, selectedHouse, setSelectedHouse } = useSimplifiedData()
 
-const HouseList: React.FC<HouseListProps> = ({
-  houses,
-  onHouseSelect,
-  selectedHouse,
-}) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Critical":
-        return "bg-red-500 text-white";
-      case "Warning":
-        return "bg-yellow-500 text-white";
-      case "Normal":
-        return "bg-green-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
+  const getStatusColor = (value: number, limit: number) => {
+    const ratio = value / limit;
+    if (ratio >= 0.9) {
+      return (
+        <span
+          className={`px-2 py-1 rounded text-xs font-medium ${"bg-red-500 text-white"}`}
+        >
+          Critical
+        </span>
+      )
+    } if (ratio >= 0.7) {
+      return (
+        <span
+          className={`px-2 py-1 rounded text-xs font-medium ${"bg-yellow-500 text-white"}`}
+        >
+          Warning
+        </span>
+
+      )
     }
+    return (
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${"bg-green-500 text-white"}`}
+      >
+        Normal
+      </span>
+
+    )
   };
 
   return (
@@ -34,34 +44,35 @@ const HouseList: React.FC<HouseListProps> = ({
 
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto scroll-smooth">
-        <div className="space-y-4 pr-2">
+        <div className="space-y-4 p-2">
           {houses.map((house) => (
             <div
               key={house.id}
-              onClick={() => onHouseSelect(house)}
-              className={`p-4 bg-white/90 rounded-lg cursor-pointer transition-all hover:bg-white shadow-sm ${
-                selectedHouse?.id === house.id ? "ring-2 ring-blue-500" : ""
-              }`}
+              onClick={() => setSelectedHouse(house)}
+              className={`p-4 bg-white/90 rounded-lg cursor-pointer transition-all hover:bg-white shadow-sm ${selectedHouse?.id === house.id ? "ring-2 ring-blue-500 scale-105" : ""
+                }`}
             >
               <h3 className="font-semibold text-gray-800 mb-2">{house.name}</h3>
               <div className="space-y-1 text-sm text-gray-600">
                 <div className="flex justify-between">
-                  <span>Current Load</span>
-                  <span className="font-medium">{house.currentLoad} MW</span>
+                  <span>Meter Code</span>
+                  <span className="font-medium">{house.meterCode} MW</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Max Capacity</span>
+                  <span className="font-medium">{house.max_capacity_KW} MW</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Total DER's</span>
-                  <span className="font-medium">{house.totalDERs}</span>
+                  <span className="font-medium">{house.ders.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Type</span>
+                  <span className="font-medium">{house.type}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Status</span>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                      house.status
-                    )}`}
-                  >
-                    {house.status}
-                  </span>
+                  {getStatusColor(1, house.max_capacity_KW ?? 1)}
                 </div>
               </div>
             </div>

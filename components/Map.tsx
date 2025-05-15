@@ -4,14 +4,10 @@ import React from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useSimplifiedData } from "@/lib/useSimplifiedData";
 
-interface MapProps {
-  houses: House[];
-  onHouseSelect: (house: House) => void;
-  selectedHouse: House | null;
-}
-
-const Map: React.FC<MapProps> = ({ houses, onHouseSelect, selectedHouse }) => {
+const MapComponent = () => {
+  const { data: houses, setSelectedHouse } = useSimplifiedData()
   // Create custom icons for different statuses
   const createIcon = (status: string) => {
     const iconColor =
@@ -58,18 +54,18 @@ const Map: React.FC<MapProps> = ({ houses, onHouseSelect, selectedHouse }) => {
           <Marker
             key={house.id}
             position={house.coordinates}
-            icon={createIcon(house.status)}
+            icon={createIcon(house.state ?? "Normal")}
             eventHandlers={{
-              click: () => onHouseSelect(house),
+              click: () => setSelectedHouse(house),
             }}
           >
             <Popup>
               <div className="p-2">
                 <h3 className="font-semibold">{house.name}</h3>
                 <p className="text-sm text-gray-600">
-                  Load: {house.currentLoad} MW
+                  Load: {house.max_capacity_KW} MW
                 </p>
-                <p className="text-sm text-gray-600">Status: {house.status}</p>
+                <p className="text-sm text-gray-600">Status: {house.meterCode}</p>
               </div>
             </Popup>
           </Marker>
@@ -79,4 +75,4 @@ const Map: React.FC<MapProps> = ({ houses, onHouseSelect, selectedHouse }) => {
   );
 };
 
-export default Map;
+export default MapComponent;
