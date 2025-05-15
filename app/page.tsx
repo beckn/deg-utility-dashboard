@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
  
 
 export default function Home() {
-  redirect('/utility')
+  redirect('/utility');
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-white flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-xl p-8 text-center">
