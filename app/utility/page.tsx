@@ -1,99 +1,127 @@
 // app/utility/page.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, use } from "react";
 import { Menu } from "lucide-react";
 import UtilityAgent from "@/components/UtilityAgent";
 import CircularProgress from "@/components/ui/CircularProgress";
 import StatusBadge from "@/components/ui/StatusBadge";
 import MapWrapper from "@/components/MapWrapper";
-import { api } from "@/lib/api";
+import { useSimplifiedUtilData } from "@/lib/useSimplifiedUtilData";
+import type { SimplifiedMeter } from "@/lib/utility";
+
+type ProcessedMeter = {
+  id: number;
+  code: string;
+  currentLoad: number;
+  capacity: number;
+  status: "Critical" | "Warning" | "Normal";
+  energyResourceName?: string;
+};
+
+type FeederData = {
+  id: string;
+  name: string;
+  region: string;
+  currentLoad: number;
+  status: "Critical" | "Warning" | "Normal";
+  coordinates: [number, number];
+  meters: ProcessedMeter[];
+};
 
 const UtilityDashboard = () => {
-  const { data, error, isLoading } = api.useQuery("get", "/api/utilities", {
-    params: {
-      query: {
-        "pagination[page]": 1,
-        "pagination[pageSize]": 100,
-        populate: "substations.transformers.meters.energyResource"
-      }
-    },
-    cache: "force-cache"
-  });
+  const { data, fetchAndStore } = useSimplifiedUtilData();
 
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [isAgentOpen, setIsAgentOpen] = useState(false);
 
+  useEffect(() => {
+    fetchAndStore();
+  }, []);
+
   // Process API data into feeders for display
   const { feeders, systemMetrics } = useMemo(() => {
-    if (!data?.data) {
+    if (!data) {
       return { feeders: [], systemMetrics: { der: { current: 0, peak: 0, total: 0 }, load: { current: 0, peak: 0, total: 0 }, mitigation: { current: 0, peak: 0, total: 0 } } };
     }
 
+    // Group meters by substation
+    const substationMap = new Map<string, { meters: SimplifiedMeter[], substation: SimplifiedMeter }>();
+
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    data.forEach((meter: SimplifiedMeter) => {
+      const key = meter.substationId.toString();
+      if (!substationMap.has(key)) {
+        substationMap.set(key, { meters: [], substation: meter });
+      }
+      substationMap.get(key)?.meters.push(meter);
+    });
+    
     const processedFeeders: FeederData[] = [];
     let totalCapacity = 0;
     let totalCurrentLoad = 0;
     let totalActiveMeters = 0;
     let totalMeters = 0;
+    
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    substationMap.forEach(({ meters, substation }) => {
+      const substationMeters: ProcessedMeter[] = [];
+      let substationLoad = 0;
+      let substationCapacity = 0;
+      
+      // biome-ignore lint/complexity/noForEach: <explanation>
+      meters.forEach((meter) => {
+        const currentLoad = Math.round(
+          meter.meterMaxCapacityKW *
+          meter.meterConsumptionLoadFactor *
+          (0.3 + Math.random() * 0.6) // Random load between 30-90%
+        );
 
-    data.data.forEach((utility) => {
-      utility.attributes.substations.data.forEach((substation) => {
-        const substationMeters: ProcessedMeter[] = [];
-        let substationLoad = 0;
-        let substationCapacity = 0;
+        substationLoad += currentLoad;
+        substationCapacity += meter.meterMaxCapacityKW;
+        totalMeters++;
 
-        substation.attributes.transformers.data.forEach((transformer) => {
-          transformer.attributes.meters.data.forEach((meter) => {
-            const currentLoad = Math.round(
-              meter.attributes.max_capacity_KW * 
-              meter.attributes.consumptionLoadFactor * 
-              (0.3 + Math.random() * 0.6) // Random load between 30-90%
-            );
-            
-            substationLoad += currentLoad;
-            substationCapacity += meter.attributes.max_capacity_KW;
-            totalMeters++;
+        if (meter.energyResourceId) {
+          totalActiveMeters++;
+        }
 
-            if (meter.attributes.energyResource) {
-              totalActiveMeters++;
-            }
+        const meterLoadPercentage = (currentLoad / (meter.meterMaxCapacityKW || 1)) * 100;
+        const meterStatus: "Critical" | "Warning" | "Normal" =
+          meterLoadPercentage > 85 ? "Critical" :
+            meterLoadPercentage > 60 ? "Warning" : "Normal";
 
-            const meterLoadPercentage = (currentLoad / meter.attributes.max_capacity_KW) * 100;
-            const meterStatus: "Critical" | "Warning" | "Normal" = 
-              meterLoadPercentage > 85 ? "Critical" : 
-              meterLoadPercentage > 60 ? "Warning" : "Normal";
-
-            substationMeters.push({
-              id: meter.id,
-              code: meter.attributes.code,
-              currentLoad,
-              capacity: meter.attributes.max_capacity_KW,
-              status: meterStatus,
-              energyResourceName: meter.attributes.energyResource?.data.attributes.name
-            });
-          });
+        substationMeters.push({
+          id: meter.meterId,
+          code: meter.meterCode,
+          currentLoad,
+          capacity: meter.meterMaxCapacityKW,
+          status: meterStatus,
+          energyResourceName: meter.energyResourceName
         });
+      });
 
-        totalCapacity += substationCapacity;
-        totalCurrentLoad += substationLoad;
+      totalCapacity += substationCapacity;
+      totalCurrentLoad += substationLoad;
 
-        const loadPercentage = substationCapacity > 0 ? (substationLoad / substationCapacity) * 100 : 0;
-        const status: "Critical" | "Warning" | "Normal" = 
-          loadPercentage > 85 ? "Critical" : 
+      const loadPercentage = substationCapacity > 0 ? (substationLoad / substationCapacity) * 100 : 0;
+      const status: "Critical" | "Warning" | "Normal" =
+        loadPercentage > 85 ? "Critical" :
           loadPercentage > 60 ? "Warning" : "Normal";
 
-        processedFeeders.push({
-          id: substation.id.toString(),
-          name: substation.attributes.name,
-          region: substation.attributes.city,
-          currentLoad: Math.round(loadPercentage),
-          status,
-          coordinates: [
-            parseFloat(substation.attributes.latitude),
-            parseFloat(substation.attributes.longtitude)
-          ],
-          meters: substationMeters
-        });
+      const coordinates = [
+        Number.parseFloat(substation.substationLatitude ?? "0"),
+        Number.parseFloat(substation.substationLongtitude ?? "0")
+      ] as [number, number];
+      console.log("Substation:", substation.substationName, "Coordinates:", coordinates);
+
+      processedFeeders.push({
+        id: substation.substationId.toString(),
+        name: substation.substationName,
+        region: substation.substationCity,
+        currentLoad: Math.round(loadPercentage),
+        status,
+        coordinates,
+        meters: substationMeters
       });
     });
 
@@ -125,32 +153,6 @@ const UtilityDashboard = () => {
 
   const filterTabs = ["All", "Substations", "Feeders", "Households", "DER's"];
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading utility data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center text-red-600">
-            <p className="text-lg font-semibold">Error loading data</p>
-            <p className="text-sm">{error.message}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-white via-blue-100 to-blue-200">
       {/* Header */}
@@ -171,10 +173,10 @@ const UtilityDashboard = () => {
         <div className="w-80 shadow-lg flex flex-col bg-blue-100/50 p-2 m-4 rounded-lg">
           <div className="p-2">
             <div className="flex space-x-2">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+              <button type="button" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
                 Substation Summary
               </button>
-              <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">
+              <button type="button" className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">
                 Audit Trail
               </button>
             </div>
@@ -326,12 +328,12 @@ const UtilityDashboard = () => {
                     {filterTabs.map((tab) => (
                       <button
                         key={tab}
+                        type="button"
                         onClick={() => setSelectedFilter(tab)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                          selectedFilter === tab
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${selectedFilter === tab
                             ? "bg-blue-600 text-white"
                             : "text-gray-600 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {tab}
                       </button>
@@ -348,6 +350,7 @@ const UtilityDashboard = () => {
       {/* Utility Agent */}
       <div className="fixed bottom-6 right-6">
         <button
+          type="button"
           onClick={() => setIsAgentOpen(!isAgentOpen)}
           className="bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
         >

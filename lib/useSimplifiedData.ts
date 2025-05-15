@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { SimplifiedItem } from './convetor';
 import { simplifyData } from './convetor';
 import { strapiClient } from './strapi';
+import { simplifyUtilData } from './utility';
 
 type SimplifiedDataState = {
     data: SimplifiedItem[];
@@ -32,6 +33,7 @@ export const useSimplifiedData = create<SimplifiedDataState>((set) => ({
                 }
             }
         });
+        
         if (error) {
             // handle error as needed
             set({ data: [] });

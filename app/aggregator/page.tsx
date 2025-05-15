@@ -18,8 +18,6 @@ const Page = () => {
   useEffect(() => {
 
     fetchAndStore();
-    // setInterval(() => {
-    // }, 100000);
 
   }, []);
 
