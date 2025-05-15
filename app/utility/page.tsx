@@ -34,10 +34,67 @@ const UtilityDashboard = () => {
 
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [isAgentOpen, setIsAgentOpen] = useState(false);
+  const [gridLoadData, setGridLoadData] = useState(null);
+  const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null);
+  const [chatInitiated, setChatInitiated] = useState(false);
 
   useEffect(() => {
     fetchAndStore();
   }, []);
+
+  // Modify the existing useEffect for grid load polling
+  useEffect(() => {
+    const checkGridLoad = async () => {
+      try {
+        const response = await fetch('/api/grid-load');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          setGridLoadData(data.data);
+          
+          // Only call chat API if we haven't done it yet
+          if (!chatInitiated) {
+            try {
+              const chatResponse = await fetch('https://api-deg-agents.becknprotocol.io/chat', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  query: `ALERT: Transformer ${data.data.transformer.name} at ${data.data.transformer.city} (ID: ${data.data.transformer.id}) 
+                  connected to ${data.data.transformer.substation.name} is approaching its maximum capacity of ${data.data.transformer.max_capacity_KW}KW. 
+                  Current load is at critical levels. Would you like to initiate load balancing measures?`,
+                  client_id: "test_123",
+                  is_utility: true
+                })
+              });
+              
+              const chatData = await chatResponse.json();
+              console.log("Chat Response:", chatData);
+              setInitialChatMessage(chatData.message || chatData.response.message || chatData);
+              setChatInitiated(true);
+              // Set isAgentOpen after we have the message
+              setIsAgentOpen(true);
+            } catch (chatError) {
+              console.error('Error initiating chat:', chatError);
+              setInitialChatMessage("I've detected that transformer TR-1234 has exceeded its load capacity by 15%. Would you like me to initiate the DFP (Demand Flexibility Program) to reduce the load? This will help prevent potential equipment damage and maintain grid stability.");
+              setChatInitiated(true);
+              // Set isAgentOpen after we have the fallback message
+              setIsAgentOpen(true);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking grid load:', error);
+      }
+    };
+
+    // Check immediately and then every 5 seconds
+    checkGridLoad();
+    const interval = setInterval(checkGridLoad, 5000);
+
+    return () => clearInterval(interval);
+  }, [chatInitiated]);
 
   // Process API data into feeders for display
   const { feeders, systemMetrics } = useMemo(() => {
@@ -361,7 +418,10 @@ const UtilityDashboard = () => {
         </button>
       </div>
 
-      {isAgentOpen && <UtilityAgent onClose={() => setIsAgentOpen(false)} />}
+      {isAgentOpen && <UtilityAgent 
+        onClose={() => setIsAgentOpen(false)} 
+        initialMessage={initialChatMessage as string}
+      />}
     </div>
   );
 };

@@ -69,7 +69,7 @@ const UtilityMap: React.FC<UtilityMapProps> = ({ feeders = [] }) => {
     : -122.143;
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full z-50">
       <MapContainer
         center={[centerLat, centerLng]}
         zoom={12}
