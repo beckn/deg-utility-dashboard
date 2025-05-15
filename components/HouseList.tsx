@@ -123,12 +123,12 @@ const HouseList = () => {
 const LiveScore = ({ id }: { id: string | number }) => {
   const { data, error } = useMeterDataStream(id)
   return (
-    <Card >
+    <div className="flex items-center bg-red-200 animate-pulse px-2">
       <div>
         <span className="text-sm">Load</span>
         <span className="font-medium text-sm ps-2">{data} kW</span>
       </div>
-    </Card>
+    </div>
   );
 }
 

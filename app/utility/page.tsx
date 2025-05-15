@@ -40,9 +40,17 @@ const UtilityDashboard = () => {
   }, []);
 
   // Process API data into feeders for display
-  const { feeders, systemMetrics } = useMemo(() => {
+  const { feeders, systemMetrics, substationData } = useMemo(() => {
     if (!data) {
-      return { feeders: [], systemMetrics: { der: { current: 0, peak: 0, total: 0 }, load: { current: 0, peak: 0, total: 0 }, mitigation: { current: 0, peak: 0, total: 0 } } };
+      return { 
+        feeders: [], 
+        systemMetrics: { 
+          der: { current: 0, peak: 0, total: 0 }, 
+          load: { current: 0, peak: 0, total: 0 }, 
+          mitigation: { current: 0, peak: 0, total: 0 } 
+        },
+        substationData: new Map()
+      };
     }
 
     // Group meters by substation
@@ -148,7 +156,7 @@ const UtilityDashboard = () => {
       }
     };
 
-    return { feeders: processedFeeders, systemMetrics };
+    return { feeders: processedFeeders, systemMetrics, substationData: substationMap };
   }, [data]);
 
   const filterTabs = ["All", "Substations", "Feeders", "Households", "DER's"];
@@ -174,7 +182,7 @@ const UtilityDashboard = () => {
           <div className="p-2">
             <div className="flex space-x-2">
               <button type="button" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
-                Substation Summary
+                Feader Summary
               </button>
               <button type="button" className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">
                 Audit Trail
