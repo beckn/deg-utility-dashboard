@@ -1,3 +1,4 @@
+// components/UtilityMap.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -5,17 +6,8 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-interface Feeder {
-  id: string;
-  name: string;
-  region: string;
-  currentLoad: number;
-  status: "Critical" | "Warning" | "Normal";
-  coordinates: [number, number];
-}
-
 interface UtilityMapProps {
-  feeders: Feeder[];
+  feeders: FeederData[];
 }
 
 const UtilityMap: React.FC<UtilityMapProps> = ({ feeders = [] }) => {
@@ -33,32 +25,11 @@ const UtilityMap: React.FC<UtilityMapProps> = ({ feeders = [] }) => {
     );
   }
 
-  // Create custom icons for different types that match the image
-  const createIcon = (type: string, status?: string) => {
-    let iconColor = "#3b82f6"; // Default blue
-    let symbol = "";
+  const createSubstationIcon = (status: "Critical" | "Warning" | "Normal") => {
+    let iconColor = "#10b981"; // Default green
+    if (status === "Critical") iconColor = "#ef4444"; // Red
+    else if (status === "Warning") iconColor = "#f59e0b"; // Yellow
 
-    if (type === "DER") {
-      iconColor = "#10b981"; // Green
-      symbol = "⚡"; // Lightning for DER
-    } else if (type === "household") {
-      iconColor = "#06b6d4"; // Cyan/Teal
-      symbol = "🏠"; // House for household
-    } else if (type === "substation") {
-      iconColor = "#eab308"; // Yellow/Golden
-      symbol = "▣"; // Box for substation
-    } else {
-      // Feeder - Green with lightning
-      iconColor = "#10b981";
-      symbol = "⚡";
-    }
-
-    if (status) {
-      if (status === "Critical") iconColor = "#ef4444";
-      else if (status === "Warning") iconColor = "#f59e0b";
-    }
-
-    // Create SVG icons that match the image style
     const svgString = `
       <svg width="40" height="50" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -76,7 +47,7 @@ const UtilityMap: React.FC<UtilityMapProps> = ({ feeders = [] }) => {
                 fill="white" 
                 font-family="Arial, sans-serif" 
                 font-size="16" 
-                font-weight="bold">${symbol}</text>
+                font-weight="bold">⚡</text>
         </g>
       </svg>
     `;
@@ -89,159 +60,70 @@ const UtilityMap: React.FC<UtilityMapProps> = ({ feeders = [] }) => {
     });
   };
 
-  // Mock data for different asset types positioned around Stanford University
-  const derAssets = [
-    {
-      id: "der1",
-      name: "Solar Farm 1",
-      type: "DER",
-      coordinates: [37.435, -122.155] as [number, number],
-    },
-    {
-      id: "der2",
-      name: "Solar Farm 2",
-      type: "DER",
-      coordinates: [37.44, -122.135] as [number, number],
-    },
-    {
-      id: "der3",
-      name: "Solar Farm 3",
-      type: "DER",
-      coordinates: [37.445, -122.165] as [number, number],
-    },
-  ];
-
-  const households = [
-    {
-      id: "h1",
-      name: "Residential Area 1",
-      type: "household",
-      coordinates: [37.43, -122.145] as [number, number],
-    },
-    {
-      id: "h2",
-      name: "Residential Area 2",
-      type: "household",
-      coordinates: [37.448, -122.148] as [number, number],
-    },
-  ];
-
-  const substations = [
-    {
-      id: "s1",
-      name: "Main Substation",
-      type: "substation",
-      coordinates: [37.438, -122.143] as [number, number],
-    },
-    {
-      id: "s2",
-      name: "Substation 2",
-      type: "substation",
-      coordinates: [37.442, -122.152] as [number, number],
-    },
-    {
-      id: "s3",
-      name: "Substation 3",
-      type: "substation",
-      coordinates: [37.439, -122.162] as [number, number],
-    },
-    {
-      id: "s4",
-      name: "Substation 4",
-      type: "substation",
-      coordinates: [37.43, -122.175] as [number, number],
-    },
-  ];
+  // Calculate map center based on all substations
+  const centerLat = feeders.length > 0 
+    ? feeders.reduce((sum, feeder) => sum + feeder.coordinates[0], 0) / feeders.length
+    : 37.4419;
+  const centerLng = feeders.length > 0
+    ? feeders.reduce((sum, feeder) => sum + feeder.coordinates[1], 0) / feeders.length
+    : -122.143;
 
   return (
     <div className="h-full w-full">
       <MapContainer
-        center={[37.4419, -122.143]}
-        zoom={14}
+        center={[centerLat, centerLng]}
+        zoom={12}
         className="h-full w-full"
       >
-        {/* Light/white themed tile layer - showing only roads and buildings */}
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        {/* Custom CSS for even lighter appearance */}
-        <style jsx>{`
-          .leaflet-container {
-            background: #f8fafc !important;
-          }
-        `}</style>
-
-        {/* Feeder markers - Green lightning icons */}
-        {feeders &&
-          feeders.length > 0 &&
-          feeders.map((feeder) => (
-            <Marker
-              key={feeder.id}
-              position={feeder.coordinates}
-              icon={createIcon("feeder", feeder.status)}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold">{feeder.name}</h3>
-                  <p className="text-sm text-gray-600">
-                    Region: {feeder.region}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Load: {feeder.currentLoad}%
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Status: {feeder.status}
-                  </p>
+        {/* Substation markers */}
+        {feeders.map((feeder) => (
+          <Marker
+            key={feeder.id}
+            position={feeder.coordinates}
+            icon={createSubstationIcon(feeder.status)}
+          >
+            <Popup>
+              <div className="p-3 min-w-48">
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  {feeder.name}
+                </h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Region:</span>
+                    <span className="font-medium">{feeder.region}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Current Load:</span>
+                    <span className="font-medium">{feeder.currentLoad}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Active Meters:</span>
+                    <span className="font-medium">{feeder.meters.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Status:</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      feeder.status === "Critical" ? "bg-red-500 text-white" :
+                      feeder.status === "Warning" ? "bg-yellow-500 text-white" :
+                      "bg-green-500 text-white"
+                    }`}>
+                      {feeder.status}
+                    </span>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-500">
+                      Critical meters: {feeder.meters.filter(m => m.status === "Critical").length}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Warning meters: {feeder.meters.filter(m => m.status === "Warning").length}
+                    </p>
+                  </div>
                 </div>
-              </Popup>
-            </Marker>
-          ))}
-
-        {/* DER assets - Green lightning icons */}
-        {derAssets.map((asset) => (
-          <Marker
-            key={asset.id}
-            position={asset.coordinates}
-            icon={createIcon(asset.type)}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-semibold">{asset.name}</h3>
-                <p className="text-sm text-gray-600">Type: DER Asset</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-
-        {/* Households - Cyan house icons */}
-        {households.map((house) => (
-          <Marker
-            key={house.id}
-            position={house.coordinates}
-            icon={createIcon(house.type)}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-semibold">{house.name}</h3>
-                <p className="text-sm text-gray-600">Type: Household</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-
-        {/* Substations - Yellow/Golden box icons */}
-        {substations.map((substation) => (
-          <Marker
-            key={substation.id}
-            position={substation.coordinates}
-            icon={createIcon(substation.type)}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-semibold">{substation.name}</h3>
-                <p className="text-sm text-gray-600">Type: Substation</p>
               </div>
             </Popup>
           </Marker>
