@@ -2,8 +2,6 @@ import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
 import UtilityDashboard from "./components/utility-dashboard"
 
-export const revalidate = 300 // Revalidate every 5 minutes
-
 export default function Page() {
   return (
     <Suspense
@@ -18,3 +16,5 @@ export default function Page() {
     </Suspense>
   )
 }
+
+export default UtilityDashboard;

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -22,53 +21,16 @@ interface ChartData {
 
 interface UtilityAgentProps {
   onClose: () => void;
+  initialMessage: string;
 }
 
-const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose }) => {
+const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose, initialMessage }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Good morning! Based on your past 12 months of usage and roof geometry, you're an excellent candidate for rooftop solar + battery.\n\nWould you like me to prepare a personalized plan and begin coordination?",
+      text: initialMessage,
       isUser: false,
       timestamp: new Date(),
-      charts: [
-        {
-          id: "chart1",
-          title: "March 2023",
-          value: 50,
-          color: "#3b82f6",
-          data: [
-            { name: "Option A", value: 2.3, color: "#3b82f6" },
-            { name: "Option B", value: 19.2, color: "#ef4444" },
-            { name: "Option C", value: 5.5, color: "#f59e0b" },
-            { name: "Option D", value: 53, color: "#eab308" },
-          ],
-        },
-        {
-          id: "chart2",
-          title: "March 2023",
-          value: 50,
-          color: "#3b82f6",
-          data: [
-            { name: "Option A", value: 2.3, color: "#3b82f6" },
-            { name: "Option B", value: 19.2, color: "#ef4444" },
-            { name: "Option C", value: 5.5, color: "#f59e0b" },
-            { name: "Option D", value: 53, color: "#eab308" },
-          ],
-        },
-        {
-          id: "chart3",
-          title: "March 2023",
-          value: 50,
-          color: "#3b82f6",
-          data: [
-            { name: "Option A", value: 2.3, color: "#3b82f6" },
-            { name: "Option B", value: 19.2, color: "#ef4444" },
-            { name: "Option C", value: 5.5, color: "#f59e0b" },
-            { name: "Option D", value: 53, color: "#eab308" },
-          ],
-        },
-      ],
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -83,29 +45,58 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose }) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
-    const newMessage: Message = {
+    // Add user message
+    const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
       isUser: true,
       timestamp: new Date(),
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages([...messages, userMessage]);
     setInputText("");
 
-    // Simulate agent response
-    setTimeout(() => {
+    // Call chat API
+    try {
+      const chatResponse = await fetch('https://api-deg-agents.becknprotocol.io/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: inputText,
+          client_id: "test_123",
+          is_utility: true
+        })
+      });
+      
+      const chatData = await chatResponse.json();
+      
+      // Add agent response
       const agentResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I understand your interest. Let me analyze your current energy usage patterns and local solar potential to create a customized recommendation.",
+        text: chatData.message || chatData.response.message || "I apologize, but I'm having trouble understanding. Could you please rephrase that?",
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, agentResponse]);
-    }, 1000);
+      
+      setMessages(prev => [...prev, agentResponse]);
+    } catch (error) {
+      console.error('Error getting chat response:', error);
+      
+      // Add error message
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, errorResponse]);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -168,7 +159,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose }) => {
 
   return (
     <div
-      className={`fixed bottom-20 right-6 bg-gray-700 rounded-lg shadow-xl transition-all duration-300 ${
+      className={`fixed bottom-20 z-100 right-6 bg-gray-700 rounded-lg shadow-xl transition-all duration-300 ${
         isMinimized ? "w-64 h-12" : "w-[600px] h-[500px]"
       }`}
     >
