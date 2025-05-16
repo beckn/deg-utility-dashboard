@@ -1,9 +1,20 @@
-// components/ControlPanel.tsx
 import React, { useState } from "react";
 import { X, Loader2 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+
+interface DER {
+  id: number;
+  name?: string;
+  currentLoad?: number;
+  isEnabled?: boolean;
+  attributes: {
+    switched_on: boolean;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt: string;
+  };
+}
 
 interface ControlPanelProps {
   house: House;
@@ -18,18 +29,32 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onClose,
   onApplySettings,
 }) => {
-  const [ders, setDers] = useState<DER[]>(house.ders);
+  const [ders, setDers] = useState<DER[]>(house.ders.map(der => ({
+    ...der,
+    attributes: {
+      switched_on: der.isEnabled,
+      createdAt: '',
+      updatedAt: '',
+      publishedAt: ''
+    }
+  })));
 
   const handleDerToggle = (derId: number) => {
     setDers((prev) =>
       prev.map((der) =>
-        der.id === derId ? { ...der, isEnabled: !der.isEnabled } : der
+        der.id === derId ? { ...der, isEnabled: !der.attributes.switched_on } : der
       )
     );
   };
 
   const handleApply = () => {
-    onApplySettings({ ...house, ders });
+    const processedDers = ders.map(der => ({
+      id: der.id,
+      name: der.name || `DER ${der.id}`,
+      currentLoad: der.currentLoad || (der.attributes.switched_on ? 1 : 0),
+      isEnabled: der.attributes.switched_on,
+    }));
+    onApplySettings({ ...house, ders: processedDers });
   };
 
   return (
@@ -53,13 +78,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
             >
               <div>
-                <div className="font-medium">{der.name}</div>
+                <div className="font-medium">{der.id}</div>
                 <div className="text-sm text-gray-600">
-                  Current Load: {der.currentLoad} kW
+                  Current Load: {der.attributes.switched_on} kW
                 </div>
               </div>
               <Switch
-                checked={der.isEnabled}
+                checked={der.attributes.switched_on}
                 onCheckedChange={() => handleDerToggle(der.id)}
                 disabled={isLoading}
               />

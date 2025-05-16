@@ -4,7 +4,6 @@ import { useSimplifiedData } from "@/lib/useSimplifiedData";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -13,6 +12,7 @@ import React from "react";
 import { SimplifiedItem } from "@/lib/convetor";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Switch } from "./ui/switch";
+import { Button } from "./ui/button";
 
 const HouseList = () => {
   const { data: houses, selectedHouse, setSelectedHouse } = useSimplifiedData()
@@ -99,16 +99,15 @@ const HouseList = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>List of DER</DialogTitle>
+                  
                   {
                     house.ders.map((der, i) => (
                       <DERComponent count={i} key={der.id} der={der} />
+                      
                     ))
                   }
-                  <CardFooter className="gap-3">
-                    <span>
-                      Turn everything on/off
-                    </span>
-                    <Switch />
+                  <CardFooter className="gap-3 flex ">
+                    <Button className="ml-auto">Apply Settings</Button>
                   </CardFooter>
                 </DialogHeader>
               </DialogContent>

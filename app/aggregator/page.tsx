@@ -7,7 +7,7 @@ import HouseList from "@/components/HouseList";
 import { Menu } from "lucide-react";
 import { useSimplifiedData } from "@/lib/useSimplifiedData";
 
-const MapComponent = dynamic(() => import("@/components/Map"), { ssr: false });
+const MapComponent = dynamic(() => import("@/components/AggregatorMap"), { ssr: false });
 
 const Page = () => {
   const { data: simplifiedData, fetchAndStore } = useSimplifiedData();

@@ -34,11 +34,13 @@ const MapComponent = () => {
     });
   };
 
+  
+
   return (
     <div className="h-full w-full bg-white/70 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
       <MapContainer
-        center={[37.4419, -122.143]}
-        zoom={15}
+        center={[37.76, -122.42]}
+        zoom={12}
         className="h-full w-full"
       >
         <TileLayer
