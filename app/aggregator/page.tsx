@@ -1,40 +1,38 @@
-// page.tsx
 "use client";
+
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import ControlPanel from "@/components/ControlPanel";
 import HouseList from "@/components/HouseList";
-import { Menu, Play, Square, RotateCcw } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useSimplifiedData } from "@/lib/useSimplifiedData";
-import { Button } from "@/components/ui/button";
 
 const MapComponent = dynamic(() => import("@/components/AggregatorMap"), { ssr: false });
 
 const Page = () => {
   const { data: simplifiedData, fetchAndStore } = useSimplifiedData();
-  const [selectedHouse, setSelectedHouse] = useState<any>(null);
+
+  const [selectedHouse, setSelectedHouse] = useState<House | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+
     fetchAndStore();
+
   }, []);
 
-  const handleHouseSelect = (house: any) => {
+  const handleHouseSelect = (house: House) => {
     setSelectedHouse(house);
   };
 
-  const handleApplySettings = async (updatedHouse: any) => {
+  const handleApplySettings = async (updatedHouse: House) => {
     setIsLoading(true);
+
     // Simulate API call
     setTimeout(() => {
       setSelectedHouse(null);
       setIsLoading(false);
     }, 2000);
-  };
-
-  const handleResetSimulation = () => {
-    // Reset will trigger useEffect in HouseList component
-    fetchAndStore();
   };
 
   return (
@@ -44,21 +42,15 @@ const Page = () => {
         <div className="flex items-center space-x-2">
           <Menu className="w-6 h-6 text-gray-700" />
           <h1 className="text-lg font-semibold text-gray-800">
-            Energy Management Dashboard
+            Aggregators Dashboard
           </h1>
         </div>
-        <div className="flex items-center space-x-3">
-          
-          <div className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center">
-            <span className="text-white font-medium">A</span>
-          </div>
+        <div className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center">
+          <span className="text-white font-medium">A</span>
         </div>
       </header>
 
-      {/* Demo Instructions */}
-     
-
-      <div className="flex h-[calc(100vh-120px)]">
+      <div className="flex h-[calc(100vh-80px)]">
         {/* Left Panel - House List */}
         <div className="w-80 bg-white/70 backdrop-blur-sm rounded-lg mx-4 my-2 p-4 shadow-lg">
           <HouseList />
@@ -66,7 +58,7 @@ const Page = () => {
 
         {/* Main Content - Map */}
         <div className="flex-1 mx-4 my-2">
-          <MapComponent />
+          <MapComponent/>
         </div>
       </div>
 
