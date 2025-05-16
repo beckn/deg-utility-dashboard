@@ -48,7 +48,7 @@ const Page = () => {
           </h1>
         </div>
         <div className="flex items-center space-x-3">
-          
+
           <div className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center">
             <span className="text-white font-medium">A</span>
           </div>
