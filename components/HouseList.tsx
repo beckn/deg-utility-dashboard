@@ -8,12 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import React from "react";
-import { SimplifiedItem } from "@/lib/convetor";
-import { Card, CardContent, CardFooter } from "./ui/card";
-import { Switch } from "./ui/switch";
+} from "@/components/ui/dialog";
+// components/HouseList.tsx
+import { api, useMeterDataStream } from "@/lib/api";
+import type { SimplifiedItem } from "@/lib/convetor";
+import { useSimplifiedData } from "@/lib/useSimplifiedData";
 import { Button } from "./ui/button";
+import { Card, CardFooter } from "./ui/card";
+import { Switch } from "./ui/switch";
+import React, { useState } from "react";
 
 const HouseList = () => {
   const { data: houses, selectedHouse, setSelectedHouse } = useSimplifiedData();
@@ -170,7 +173,7 @@ const LiveScore = ({ load, isFirst }: { load: number; isFirst: boolean }) => {
           {load.toFixed(1)} kW
         </span>
       </div>
-    </Card>
+    </div>
   );
 };
 
@@ -204,6 +207,7 @@ const DERComponent = ({
           </div>
         </div>
       </CardContent>
+
     </Card>
   );
 };
