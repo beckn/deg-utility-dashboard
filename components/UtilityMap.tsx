@@ -8,6 +8,8 @@ import "leaflet/dist/leaflet.css";
 
 interface UtilityMapProps {
   feeders: FeederData[];
+  // substations?: Substation[];
+  // households?: Meter[];
 }
 
 const UtilityMap: React.FC<UtilityMapProps> = ({ feeders = [] }) => {

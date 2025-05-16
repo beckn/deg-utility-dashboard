@@ -28,7 +28,7 @@ export const useSimplifiedData = create<SimplifiedDataState>((set) => ({
                 // @ts-ignore: If type mismatch, adjust as needed
                 query: {
                     "pagination[page]": 1,
-                    "pagination[pageSize]": 2,
+                    "pagination[pageSize]": 7,
                     populate: "ders,meter"
                 }
             }
