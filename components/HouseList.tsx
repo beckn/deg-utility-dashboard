@@ -1,18 +1,18 @@
-// components/HouseList.tsx
-import { useMeterDataStream } from "@/lib/api";
-import { useSimplifiedData } from "@/lib/useSimplifiedData";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import React from "react";
-import { SimplifiedItem } from "@/lib/convetor";
-import { Card, CardContent, CardFooter } from "./ui/card";
-import { Switch } from "./ui/switch";
+} from "@/components/ui/dialog";
+// components/HouseList.tsx
+import { api, useMeterDataStream } from "@/lib/api";
+import type { SimplifiedItem } from "@/lib/convetor";
+import { useSimplifiedData } from "@/lib/useSimplifiedData";
 import { Button } from "./ui/button";
+import { Card, CardFooter } from "./ui/card";
+import { Switch } from "./ui/switch";
+import React, { useState } from "react";
 
 const HouseList = () => {
   const { data: houses, selectedHouse, setSelectedHouse } = useSimplifiedData()
@@ -99,11 +99,11 @@ const HouseList = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>List of DER</DialogTitle>
-                  
+
                   {
                     house.ders.map((der, i) => (
                       <DERComponent count={i} key={der.id} der={der} />
-                      
+
                     ))
                   }
                   <CardFooter className="gap-3 flex ">
@@ -132,12 +132,42 @@ const LiveScore = ({ id }: { id: string | number }) => {
 }
 
 const DERComponent = ({ der, count }: { der: SimplifiedItem["ders"][0], count: number }) => {
+  const [switchedOn, setSwitchedOn] = useState<boolean>(!!der.switched_on);
+
+  const { mutateAsync } = api.useMutation('put', "/api/ders/{id}", {});
+
+  const handleToggle = async () => {
+    const newState = !switchedOn;
+    setSwitchedOn(newState); // Optimistic update
+
+    const response = await mutateAsync({
+      body: {
+        // @ts-ignore
+        data: {
+          switched_on: newState,
+        },
+      },
+      params: {
+        path: {
+          id: `${der.id}`,
+        },
+      },
+    });
+
+    // Update state with actual value from server response (if present)
+    // @ts-ignore
+    if (response?.data?.attributes?.switched_on !== undefined) {
+      // @ts-ignore
+      setSwitchedOn(response.data.attributes.switched_on);
+    }
+  };
+
   return (
     <Card>
       <CardFooter className="justify-between">
         <span>{count}</span>
         <span>{der.id}</span>
-        <Switch />
+        <Switch checked={switchedOn} onCheckedChange={handleToggle} />
       </CardFooter>
     </Card>
   );
