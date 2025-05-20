@@ -98,7 +98,7 @@ export default function UtilityDashboard() {
         {/* Right: UtilityAgent Chat Panel */}
         <div className="w-[400px] min-w-[320px] max-w-md flex-shrink-0 h-full bg-card rounded-lg shadow border border-border">
           <div className="h-full flex flex-col">
-            <UtilityAgent initialMessage="Hi! How can I help you today?" onClose={() => {}} />
+            <UtilityAgent initialMessage="Alert: Grid Stress Detected – Capacity Breach Likely in 30 Minutes" onClose={() => {}} />
           </div>
         </div>
       </div>
