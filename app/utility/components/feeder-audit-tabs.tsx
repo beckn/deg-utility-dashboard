@@ -72,7 +72,7 @@ export function FeederAuditTabs({ feeders }: FeederAuditTabsProps) {
   return (
     <div className="w-full max-w-md mx-auto bg-[#181A20] rounded-2xl p-0 shadow-lg">
       {/* Tabs */}
-      <div className="flex rounded-t-2xl overflow-hidden bg-[#232B3E]">
+      <div className="flex  overflow-hidden bg-[#232B3E]">
         <button
           className={`flex-1 py-2 text-base font-semibold transition-colors duration-150 ${
             tab === "feeder"

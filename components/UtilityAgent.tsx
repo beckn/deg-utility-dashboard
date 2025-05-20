@@ -410,7 +410,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
               <div
                 className={
                   message.isUser
-                    ? "inline-block rounded-xl bg-[#232b45] text-white px-4 py-2 max-w-[70%] ml-auto mb-2"
+                    ? "inline-block rounded-xl bg-[#2463EB] text-white px-4 py-2 max-w-[70%] ml-auto mb-2"
                     : "rounded-2xl bg-[#334155] px-6 py-4 max-w-[90%] mb-4"
                 }
               >
