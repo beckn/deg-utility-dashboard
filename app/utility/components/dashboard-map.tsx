@@ -9,6 +9,7 @@ interface DashboardMapProps {
   filter: string;
   onSelectMeter?: (meter: SimplifiedMeter) => void;
   pingMarkers?: { lat: number; lng: number; type: string }[];
+  zoom?: number; // Add zoom prop
 }
 
 export function DashboardMap({
@@ -16,6 +17,7 @@ export function DashboardMap({
   filter,
   onSelectMeter,
   pingMarkers,
+  zoom = 12, // Default zoom level
 }: DashboardMapProps) {
   // Changed feeders to assets
   const [isClient, setIsClient] = useState(false);
@@ -63,6 +65,7 @@ export function DashboardMap({
       assets={filteredAssets}
       onSelectMeter={onSelectMeter}
       pingMarkers={pingMarkers}
+      zoom={zoom}
     />
   );
 }
