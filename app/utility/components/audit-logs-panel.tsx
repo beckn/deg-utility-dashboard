@@ -25,16 +25,16 @@ const logs = [
 
 export function AuditLogsPanel() {
   return (
-    <div className="max-w-md mx-auto bg-[#232B3E] rounded-2xl p-8 shadow-lg text-white">
+    <div className="max-w-md mx-auto bg-[#1E293B]  p-8  text-white">
       <h2 className="text-2xl font-bold mb-6">Audit Logs</h2>
       <div className="space-y-4">
         {logs.map((log, idx) => (
           <div key={idx} className="bg-[#313A4E] rounded-lg p-4 shadow border border-[#313A4E]">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-semibold text-lg">{log.title}</span>
+              <span className="font-semibold text-sm">{log.title}</span>
               <span className="text-sm text-blue-200">{log.time}</span>
             </div>
-            <div className="text-base text-blue-100">{log.desc}</div>
+            <div className="text-blue-100 text-sm">{log.desc}</div>
           </div>
         ))}
       </div>

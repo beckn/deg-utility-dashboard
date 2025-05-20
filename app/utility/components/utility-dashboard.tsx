@@ -31,7 +31,7 @@ export default function UtilityDashboard() {
     useSimplifiedUtilDataStore();
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [selectedFilter, setSelectedFilter] = useState("Feeders");
   const [activePanel, setActivePanel] = useState<
     "profile" | "audit" | "controls"
   >("profile");
@@ -40,23 +40,25 @@ export default function UtilityDashboard() {
 
   // California coordinates for each tab
   const tabCoordinates = {
-    All: { lat: 36.7783, lng: -119.4179 }, // Central California
-    Substations: { lat: 34.0522, lng: -118.2437 }, // Los Angeles
+    // All: { lat: 36.7783, lng: -119.4179 }, // Central California
+    Feeders: { lat: 34.0522, lng: -118.2437 }, // Los Angeles
     Transformers: { lat: 37.7749, lng: -122.4194 }, // San Francisco
     Households: { lat: 32.7157, lng: -117.1611 }, // San Diego
     "DER's": { lat: 38.5816, lng: -121.4944 }, // Sacramento
   };
 
   const tabMarkers = {
-    All: [
-      { lat: 37.7749, lng: -122.4194, type: "All" },
-      { lat: 37.7849, lng: -122.4094, type: "All" },
-      { lat: 37.7649, lng: -122.4294, type: "All" },
-    ],
-    Substations: [
-      { lat: 37.7799, lng: -122.4144, type: "Substations" },
-      { lat: 37.7699, lng: -122.4244, type: "Substations" },
-      { lat: 37.7599, lng: -122.4344, type: "Substations" },
+    // All: [
+    //   { lat: 37.7749, lng: -122.4194, type: "All" },
+    //   { lat: 37.7849, lng: -122.4094, type: "All" },
+    //   { lat: 37.7649, lng: -122.4294, type: "All" },
+    // ],
+    Feeders: [
+      { lat: 37.7799, lng: -122.4144, type: "Feeders" },
+      { lat: 37.7699, lng: -122.4244, type: "Feeders" },
+      { lat: 37.7599, lng: -122.4344, type: "Feeders" },
+      { lat: 37.7499, lng: -122.4444, type: "Feeders" },
+      { lat: 37.7899, lng: -122.4044, type: "Feeders" },
     ],
     Transformers: [
       { lat: 37.768, lng: -122.4376, type: "Transformers" },
@@ -77,7 +79,7 @@ export default function UtilityDashboard() {
 
   const [pingMarkers, setPingMarkers] = useState<
     { lat: number; lng: number; type: string }[]
-  >(tabMarkers["All"]);
+  >(tabMarkers["Feeders"]);
 
   const handleTabChange = (value: string) => {
     setSelectedFilter(value);
@@ -106,9 +108,9 @@ export default function UtilityDashboard() {
       name: "Marina District Transformer",
       substationName: "Marina Substation",
       city: "San Francisco",
-      currentLoad: 68,
-      load: 68,
-      status: "Warning" as const,
+      currentLoad: 28,
+      load: 28,
+      status: "normal" as const,
       metersCount: 15,
       coordinates: [37.8037, -122.4368],
     },
@@ -123,13 +125,38 @@ export default function UtilityDashboard() {
       metersCount: 10,
       coordinates: [37.7534, -122.4944],
     },
+    {
+      id: "transformer_4",
+      name: "Richmond District Transformer",
+      substationName: "Richmond Substation",
+      city: "San Francisco",
+      currentLoad: 80,
+      load: 80,
+      status: "Warning" as const,
+      metersCount: 8,
+      coordinates: [37.7499, -122.4444],
+    },
+    {
+      id: "transformer_5",
+      name: "Bayview District Transformer",
+      substationName: "Bayview Substation",
+      city: "San Francisco",
+      currentLoad: 78,
+      load: 78,
+      status: "Warning" as const,
+      metersCount: 14,
+      coordinates: [37.7899, -122.4044],
+    },
   ];
 
   // Set pingMarkers to these three transformers
   const transformerPingMarkers = transformerSummaries.map((t) => ({
     lat: t.coordinates[0],
     lng: t.coordinates[1],
-    type: "Transformers",
+    type: "Feeders",
+    status: t.status,
+    name: t.name,
+    load: t.load,
   }));
 
   // Find the critical transformer for agent chat
@@ -161,17 +188,30 @@ export default function UtilityDashboard() {
                 </SelectContent>
               </Select>
               <Tabs
-                defaultValue="All"
+                defaultValue="Feeders"
                 value={selectedFilter}
                 onValueChange={handleTabChange}
                 className="w-full sm:w-auto"
               >
-                <TabsList className="grid grid-cols-3 sm:grid-cols-5">
-                  <TabsTrigger value="All">All</TabsTrigger>
-                  <TabsTrigger value="Substations">Substations</TabsTrigger>
-                  <TabsTrigger value="Transformers">Transformers</TabsTrigger>
-                  <TabsTrigger value="Households">Households</TabsTrigger>
-                  <TabsTrigger value="DER's">DER's</TabsTrigger>
+                <TabsList className="flex bg-[#181A20] rounded-xl p-1 shadow border border-[#232B3E] w-fit">
+                  <TabsTrigger
+                    value="Feeders"
+                    className="px-4 ml-2 mr-2 py-1 rounded-l-lg font-semibold text-base data-[state=active]:bg-[#2563eb] data-[state=active]:text-white data-[state=inactive]:bg-[#232B3E] data-[state=inactive]:text-white/70"
+                  >
+                    Feeders
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="Transformers"
+                    className="px-4 ml-2 mr-2 py-1 font-semibold text-base data-[state=active]:bg-[#2563eb] data-[state=active]:text-white data-[state=inactive]:bg-[#232B3E] data-[state=inactive]:text-white/70"
+                  >
+                    Substations
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="Households"
+                    className="px-4 ml-2 mr-2 py-1 rounded-r-lg font-semibold text-base data-[state=active]:bg-[#2563eb] data-[state=active]:text-white data-[state=inactive]:bg-[#232B3E] data-[state=inactive]:text-white/70"
+                  >
+                    Households
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -180,7 +220,7 @@ export default function UtilityDashboard() {
                 assets={[]}
                 filter={selectedFilter}
                 pingMarkers={
-                  selectedFilter === "Transformers"
+                  selectedFilter === "Feeders"
                     ? transformerPingMarkers
                     : pingMarkers
                 }

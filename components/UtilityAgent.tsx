@@ -29,47 +29,52 @@ interface UtilityAgentProps {
 const conversationFlow = [
   {
     sender: "agent",
-    text: "Alert: Grid Stress Detected – Capacity Breach Likely in 30 Minutes",
+    text: `⚠️ **Grid Stress Detected at Central Feeder Hub [TX005]** – Capacity Breach Likely in 25 Minutes.`,
   },
   {
     sender: "agent",
-    text: `Feeder status summary:\n\nM12:\nRegion: Bernal Heights\nCapacity: 1.2 MW\nCurrent Load: 1.07 MW (89%)\n\nInner Richmond:\nRegion : Outer Sunset / Parkside\nCapacity: 1.4 MW\nCurrent Load: 1.22 MW (87%)\n\nS7:\nRegion : Outer Sunset / Parkside\nCapacity: 1.5 MW\nCurrent Load: 1.26vMW (84%)`,
+    text: `Based on the current stress levels, here are the available Demand Flexibility Program (DFP) options:\n
+### Option 1: Dynamic Demand Response (DDR)
+
+Dynamic Demand Response (DDR) rewards participants who can rapidly shift or curtail electricity usage during frequent, short-notice events. Participants receive the moderately high per-event compensation due to their ability to reliably and promptly adjust energy consumption patterns, significantly aiding grid stability and renewable energy integration.
+
+- **Reward:** $3–4.5 per kWh shifted  
+- **Bonus:** 15% extra if >90% compliance monthly  
+- **Penalty:** 15% reduction in incentives if compliance <75%  
+- **Category:** Residential  
+- **Minimum Load:** 5 kW  
+
+---
+
+### Option 2: Emergency Demand Reduction (EDR)
+
+Emergency Demand Reduction (EDR) is designed for consumers who can rapidly curtail significant energy use during critical, rare grid emergencies. These are infrequent but urgent events requiring immediate action. Participants are compensated significantly for availability but face substantial penalties for non-compliance due to critical grid dependence.
+
+- **Reward:** $250/year per kW available  
+- **Bonus:** $10.00 per kWh curtailed during events  
+- **Penalty:** 50% annual availability fee reduction per missed event  
+- **Category:** Residential  
+- **Minimum Load:** 5 kW`,
   },
-  { sender: "agent", text: "Should mitigation options be displayed?" },
-  { sender: "user", text: "" },
   {
     sender: "agent",
-    text: "Mitigation Options – Feeder M12 Target newly onboarded DER homes in Bernal Heights Estimated Relief: 320 kW Risk Level: Low Filters: Auto-consent, low-latency devices Combine DER curtailment, battery dispatch, and pause EV charging Estimated Relief: 850 kW Risk Level: Moderate Filters: Fallback Tier 1-ready, aggregator-controlled Full curtailment: DERs, batteries, and smart thermostat pre-cooling Estimated Relief: 1.7 MW Risk Level: High Filters: Includes fallback Tier 2, comfort trade-offs",
+    text: `🔎 **I recommend Option 1 – Dynamic Demand Response (DDR)** for immediate grid relief.  \nWould you like to proceed?`,
   },
-  { sender: "user", text: "" },
+  {
+    sender: "user",
+    text: `Yes, proceed.`,
+  },
   {
     sender: "agent",
-    text: "Exclusions Applied: • Battery B3 (Precita Park) is offline for diagnostics • Six DERs flagged as essential-use or medical are excluded Confirm Initiation for Option B?",
+    text: `✅ **Proceeding to Activate Demand Flexibility Option 1 – Dynamic Demand Response (DDR)**. Please wait…`,
   },
-  { sender: "user", text: "" },
   {
     sender: "agent",
-    text: "Initiating Option 2 • Commands routed through aggregators A1, A4, and B6 Actions dispatched: • 47 DER-enabled homes triggered • Battery Units B1 and B2 activated • EV charging paused for 22 sessions • Smart thermostats raised by 2°F • Water heaters delayed by 15 minutes • Consent checks completed via Residential Energy Agents Live Device Response: • 38 households accepted • 5 are pending • 4 declined: • 2 due to air quality sensor limits • 1 inverter unresponsive • 1 consent expired Should fallback be activated?",
+    text: `✅ 47 DER-enabled households have participated in DDR.`,
   },
-  { sender: "user", text: "" },
   {
     sender: "agent",
-    text: "Fallback Tier 1 Activated • 17 additional thermostats and legacy EV ports triggered • Fallback contracts verified with aggregators • Tier 2 fallback staged with 5-second delay threshold • Mean device response time: 2.3 seconds • No violations of policy or consent detected Ready to log and tag the event?",
-  },
-  { sender: "user", text: "" },
-  {
-    sender: "agent",
-    text: "Event Logged – ID: M12-0508-E03 • Fallback success rate: 91% • Average household reduction: 850 watts • Inverter issue sent to DER maintenance • Event recorded on DEG network with hash: 0xf7e1...9a2c • Timestamp: 2025-05-08 18:04:32 PST Would you like to view a DER performance summary?",
-  },
-  { sender: "user", text: "" },
-  {
-    sender: "agent",
-    text: "Feeder M12 – DER Performance Summary (Past 30 Days) • 93 DER homes onboarded • Asset mix: 64 solar, 22 batteries, 38 thermostats • Participation rate: 87% • Median response latency: 2.1 seconds • Aggregator compliance: 100% • Fallback Tier 1 success across last 7 events: 91% Share with planning?",
-  },
-  { sender: "user", text: "" },
-  {
-    sender: "agent",
-    text: "• Summary sent to Planning • DER availability map updated • Prediction model retrained All logs archived for audit and compliance",
+    text: `✅ Central Feeder Hub [TX005] load is now back to normal.`,
   },
 ];
 
@@ -202,6 +207,56 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       return () => clearTimeout(timer);
     }
   }, [step]);
+
+  useEffect(() => {
+    // Only trigger if the last message is the 'Proceeding...' message and the DDR participation message is not yet shown
+    const proceedingText =
+      "✅ **Proceeding to Activate Demand Flexibility Option 1 – Dynamic Demand Response (DDR)**. Please wait…";
+    const ddrParticipationText = conversationFlow[5].text;
+    const loadNormalText = conversationFlow[6].text;
+
+    const lastMsgIsProceeding =
+      messages.length > 0 &&
+      messages[messages.length - 1].text === proceedingText;
+    const hasDDRParticipation = messages.some(
+      (m) => m.text === ddrParticipationText
+    );
+    const hasLoadNormal = messages.some((m) => m.text === loadNormalText);
+
+    if (lastMsgIsProceeding && !hasDDRParticipation) {
+      // Add the DDR participation message after 5 seconds
+      const timer1 = setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString() + "6",
+            text: ddrParticipationText,
+            isUser: false,
+            timestamp: new Date(),
+            type: "agent",
+          },
+        ]);
+        setStep(6);
+        // Add the load normal message after another 5 seconds
+        const timer2 = setTimeout(() => {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString() + "7",
+              text: loadNormalText,
+              isUser: false,
+              timestamp: new Date(),
+              type: "agent",
+            },
+          ]);
+          setStep(7);
+        }, 5000);
+      }, 5000);
+      return () => {
+        clearTimeout(timer1);
+      };
+    }
+  }, [messages]);
 
   const handleSendMessage = () => {
     if (!inputText.trim() || !inputEnabled) return;
