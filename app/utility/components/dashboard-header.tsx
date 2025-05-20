@@ -1,30 +1,94 @@
-import { Menu } from "lucide-react"
+import { Menu, X, User, FileText, Sliders, ChevronRight } from "lucide-react"
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
+import React, { useState } from "react";
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {
+  onSelectPanel: (panel: 'profile' | 'audit' | 'controls') => void;
+  activePanel: 'profile' | 'audit' | 'controls';
+}
+
+export function DashboardHeader({ onSelectPanel, activePanel }: DashboardHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <header className="h-16 flex items-center justify-between px-6 bg-card border-b border-border shadow-sm">
-      <div className="flex items-center gap-4">
-        <button className="text-2xl font-bold tracking-tight text-primary">Utility Administration Portal</button>
-      </div>
-      <div className="flex items-center gap-4">
-        {/* Theme Toggle */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">🌞</span>
-          <Switch
-            checked={theme === "dark"}
-            onCheckedChange={checked => setTheme(checked ? "dark" : "light")}
-            aria-label="Toggle dark mode"
-          />
-          <span className="text-xs text-muted-foreground">🌙</span>
+    <>
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-40 transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Sidebar Drawer */}
+      <aside
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border shadow-lg transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ transitionProperty: 'transform' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 h-16 border-b border-border">
+          <span className="text-lg font-semibold text-primary">Menu</span>
+          <button onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
+            <X className="w-6 h-6 text-primary" />
+          </button>
         </div>
-        {/* Avatar or user icon can go here */}
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <span role="img" aria-label="avatar">👤</span>
+        <nav className="flex flex-col gap-2 mt-4 px-4">
+          <button
+            className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors text-primary font-medium w-full justify-between ${activePanel === 'profile' ? 'bg-muted' : ''}`}
+            onClick={() => onSelectPanel('profile')}
+          >
+            <span className="flex items-center gap-3"><User className="w-5 h-5" /> Profile</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors text-primary font-medium w-full justify-between ${activePanel === 'audit' ? 'bg-muted' : ''}`}
+            onClick={() => onSelectPanel('audit')}
+          >
+            <span className="flex items-center gap-3"><FileText className="w-5 h-5" /> Audit Logs</span>
+          </button>
+          <button
+            className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors text-primary font-medium w-full justify-between ${activePanel === 'controls' ? 'bg-muted' : ''}`}
+            onClick={() => onSelectPanel('controls')}
+          >
+            <span className="flex items-center gap-3"><Sliders className="w-5 h-5" /> Controls</span>
+          </button>
+        </nav>
+        <div className="absolute bottom-6 left-0 w-full flex justify-center">
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-xl font-bold text-white shadow-lg">
+            U
+          </div>
         </div>
-      </div>
-    </header>
+      </aside>
+      <header className="h-16 flex items-center justify-between px-6 bg-card border-b border-border shadow-sm relative z-30">
+        <div className="flex items-center gap-4">
+          {/* Hamburger Menu */}
+          <button
+            className="p-2 rounded-md hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-6 h-6 text-primary" />
+          </button>
+          <span className="text-xl font-semibold tracking-tight text-primary">Utility Administration Portal</span>
+        </div>
+        <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">🌞</span>
+            <Switch
+              checked={theme === "dark"}
+              onCheckedChange={checked => setTheme(checked ? "dark" : "light")}
+              aria-label="Toggle dark mode"
+            />
+            <span className="text-xs text-muted-foreground">🌙</span>
+          </div>
+          {/* Avatar or user icon can go here */}
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <span role="img" aria-label="avatar">👤</span>
+          </div>
+        </div>
+      </header>
+    </>
   )
 }
