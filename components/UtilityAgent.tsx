@@ -20,21 +20,25 @@ interface ChartData {
 }
 
 interface UtilityAgentProps {
-  onClose: () => void;
-  initialMessage: string;
+  onClose?: () => void;
+  initialMessage?: string;
 }
 
-const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose, initialMessage }) => {
+const UtilityAgent: React.FC<UtilityAgentProps> = ({
+  onClose,
+  initialMessage,
+}) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: initialMessage,
+      text:
+        initialMessage ||
+        "Good morning! Based on your past 12 months of usage and roof geometry, you're an excellent candidate for rooftop solar + battery.\n\nWould you like me to prepare a personalized plan and begin coordination?",
       isUser: false,
       timestamp: new Date(),
     },
   ]);
   const [inputText, setInputText] = useState("");
-  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -61,32 +65,38 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose, initialMessage }) 
 
     // Call chat API
     try {
-      const chatResponse = await fetch('https://api-deg-agents.becknprotocol.io/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          query: inputText,
-          client_id: "test_123",
-          is_utility: true
-        })
-      });
-      
+      const chatResponse = await fetch(
+        "https://api-deg-agents.becknprotocol.io/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: inputText,
+            client_id: "test_123",
+            is_utility: true,
+          }),
+        }
+      );
+
       const chatData = await chatResponse.json();
-      
+
       // Add agent response
       const agentResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: chatData.message || chatData.response.message || "I apologize, but I'm having trouble understanding. Could you please rephrase that?",
+        text:
+          chatData.message ||
+          chatData.response.message ||
+          "I apologize, but I'm having trouble understanding. Could you please rephrase that?",
         isUser: false,
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, agentResponse]);
+
+      setMessages((prev) => [...prev, agentResponse]);
     } catch (error) {
-      console.error('Error getting chat response:', error);
-      
+      console.error("Error getting chat response:", error);
+
       // Add error message
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -94,8 +104,8 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose, initialMessage }) 
         isUser: false,
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, errorResponse]);
+
+      setMessages((prev) => [...prev, errorResponse]);
     }
   };
 
@@ -158,89 +168,95 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({ onClose, initialMessage }) 
   };
 
   return (
-    <div
-      className={`fixed bottom-20 z-100 right-6 bg-gray-700 rounded-lg shadow-xl transition-all duration-300 ${
-        isMinimized ? "w-64 h-12" : "w-[600px] h-[500px]"
-      }`}
-    >
+    <div className="flex flex-col h-full w-full bg-card text-foreground rounded-lg border border-border">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 bg-gray-600 rounded-t-lg">
-        <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-700">AI</span>
-          </div>
-          <span className="text-white font-medium">Utility Agent</span>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setIsMinimized(!isMinimized)}
-            className="text-white hover:bg-gray-500 p-1 rounded"
-          >
-            <Minimize2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-gray-500 p-1 rounded"
-          >
-            <X className="w-4 h-4" />
-          </button>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center gap-3 w-full justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-base font-bold text-primary-foreground">
+                  AI
+                </span>
+              </div>
+              <span className="text-lg font-semibold">Agent Chat</span>
+            </div>
+            <span className="ml-3 text-xs text-green-400 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>{" "}
+              Online
+            </span>
         </div>
       </div>
-
-      {!isMinimized && (
-        <>
-          {/* Messages */}
+      {/* Messages */}
+      <div
+        className="flex-1 px-6 py-4 overflow-y-auto flex flex-col gap-4 bg-card"
+        style={{ minHeight: 0 }}
+      >
+        {messages.map((message) => (
           <div
-            className="flex-1 p-3 overflow-y-auto bg-gray-50"
-            style={{ height: "400px" }}
+            key={message.id}
+            className={`flex flex-col ${
+              message.isUser ? "items-end" : "items-start"
+            }`}
           >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`mb-4 ${
-                  message.isUser ? "text-right" : "text-left"
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className={`text-xs ${
+                  message.isUser
+                    ? "text-blue-400"
+                    : "text-blue-300 font-semibold"
                 }`}
               >
-                <div
-                  className={`inline-block p-3 rounded-lg max-w-[90%] ${
-                    message.isUser
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-800 shadow-sm"
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                  {message.charts && (
-                    <div className="mt-3 flex space-x-3 overflow-x-auto">
-                      {message.charts.map(renderChart)}
-                    </div>
-                  )}
+                {message.isUser ? "You" : "Grid Agent"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {message.timestamp.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+            <span
+              className={
+                message.isUser ? "text-blue-400" : "text-blue-300 font-semibold"
+              }
+            >
+              {message.isUser ? "You" : "Grid Agent"}
+            </span>
+            <div
+              className={`mt-1 inline-block px-3 py-2 rounded-lg ${
+                message.isUser
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
+              }`}
+            >
+              {message.text}
+              {message.charts && (
+                <div className="mt-3 flex space-x-3 overflow-x-auto">
+                  {message.charts.map(renderChart)}
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div className="p-3 bg-white border-t rounded-b-lg">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Message"
-                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleSendMessage}
-                className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+              )}
             </div>
           </div>
-        </>
-      )}
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      {/* Input */}
+      <div className="p-3 border-t border-border flex items-center gap-2">
+        <input
+          type="text"
+          className="flex-1 rounded-lg px-3 py-2 bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          placeholder="Type a Message"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={handleKeyPress}
+        />
+        <button
+          onClick={handleSendMessage}
+          className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition"
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 };

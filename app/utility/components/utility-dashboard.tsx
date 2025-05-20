@@ -7,9 +7,9 @@ import { DashboardHeader } from "./dashboard-header"
 import { DashboardSidebar } from "./dashboard-sidebar"
 import { DashboardMetrics } from "./dashboard-metrics"
 import { DashboardMap } from "./dashboard-map"
-import { UtilityAgent } from "./utility-agent"
 import { ControlPanel } from "./control-panel"
 import { Button } from "@/components/ui/button"
+import UtilityAgent from "@/components/UtilityAgent"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProcessedData } from "../lib/hooks/use-processed-data"
@@ -55,16 +55,17 @@ export default function UtilityDashboard() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-blue-100">
+    <div className="h-screen overflow-hidden bg-background text-foreground">
       <DashboardHeader />
-
-      <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row p-2 gap-2">
-        <DashboardSidebar transformerSummaries={transformerSummaries} />
-
+      <div className="h-[calc(100vh-4rem)] flex flex-row p-2 gap-2 bg-background">
+        {/* Left: Sidebar */}
+        <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
+          <DashboardSidebar transformerSummaries={transformerSummaries} />
+        </div>
+        {/* Center: Map and Metrics */}
         <main className="flex-1 flex flex-col gap-2 min-w-0">
-          <DashboardMetrics metrics={systemMetrics} />
-
-          <section className="flex-1 p-3 bg-white rounded-lg shadow border border-gray-200 flex flex-col min-h-0">
+          {/* <DashboardMetrics metrics={systemMetrics} /> */}
+          <section className="flex-1 p-3 bg-card rounded-lg shadow border border-border flex flex-col min-h-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
               <Select defaultValue="San Francisco">
                 <SelectTrigger className="w-[180px]">
@@ -74,7 +75,6 @@ export default function UtilityDashboard() {
                   <SelectItem value="San Francisco">San Francisco</SelectItem>
                 </SelectContent>
               </Select>
-
               <Tabs
                 defaultValue="All"
                 value={selectedFilter}
@@ -90,28 +90,19 @@ export default function UtilityDashboard() {
                 </TabsList>
               </Tabs>
             </div>
-
-            <div className="flex-1 rounded-lg overflow-hidden border border-gray-200">
+            <div className="flex-1 rounded-lg overflow-hidden border border-border">
               <DashboardMap assets={allAssets} filter={selectedFilter} onSelectMeter={handleOpenControlPanel} />
             </div>
           </section>
         </main>
-      </div>
-
-      <div className="fixed bottom-6 right-6 z-40">
-        <Button
-          onClick={() => setIsAgentOpen(!isAgentOpen)}
-          className="bg-blue-600 text-white px-4 py-6 rounded-full shadow-xl flex items-center space-x-2 hover:bg-blue-700 transition-all duration-150 ease-in-out transform hover:scale-105"
-        >
-          <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow">
-            <span className="text-sm font-bold text-blue-600">AI</span>
+        {/* Right: UtilityAgent Chat Panel */}
+        <div className="w-[400px] min-w-[320px] max-w-md flex-shrink-0 h-full bg-card rounded-lg shadow border border-border">
+          <div className="h-full flex flex-col">
+            <UtilityAgent initialMessage="Hi! How can I help you today?" onClose={() => {}} />
           </div>
-          <span className="text-sm font-medium">Utility Agent</span>
-        </Button>
+        </div>
       </div>
-
-      {isAgentOpen && <UtilityAgent onClose={() => setIsAgentOpen(false)} />}
-
+      {/* Control Panel Modal */}
       {isControlPanelOpen && selectedHouse && (
         <ControlPanel
           house={selectedHouse}
