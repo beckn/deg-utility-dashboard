@@ -79,7 +79,7 @@ export function FeederAuditTabs({ feeders }: FeederAuditTabsProps) {
               ? "bg-[#2563eb] text-white"
               : "bg-[#232B3E] text-white/70"
           }`}
-          style={{ borderTopLeftRadius: 16 }}
+          // style={{ borderTopLeftRadius: 16 }}
           onClick={() => setTab("feeder")}
         >
           Feeder Summary
@@ -90,7 +90,7 @@ export function FeederAuditTabs({ feeders }: FeederAuditTabsProps) {
               ? "bg-[#2563eb] text-white"
               : "bg-[#232B3E] text-white/70"
           }`}
-          style={{ borderTopRightRadius: 16 }}
+          // style={{ borderTopRightRadius: 16 }}
           onClick={() => setTab("audit")}
         >
           Audit Trail

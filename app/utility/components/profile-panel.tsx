@@ -2,7 +2,7 @@ import React from "react";
 
 export function ProfilePanel() {
   return (
-    <div className="max-w-md mx-auto bg-[#232B3E] rounded-2xl p-8 shadow-lg text-white">
+    <div className="max-w-md mx-auto bg-[#1E293B] rounded-2xl p-8 shadow-lg text-white">
       <h2 className="text-2xl font-bold mb-6">User Profile</h2>
       <div className="flex items-center gap-4 mb-6">
         <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold">JS</div>

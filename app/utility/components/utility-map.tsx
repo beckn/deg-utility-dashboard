@@ -31,7 +31,7 @@ export function UtilityMap({
 
     switch (type) {
       case "substation":
-        symbol = "⚡"; // Lightning for substation
+        symbol = "/feeders.svg"; // Lightning for substation
         break;
       case "transformer":
         symbol = "T"; // T for transformer
@@ -67,16 +67,41 @@ export function UtilityMap({
   };
 
   // Helper to create a ping icon for ping markers by type, styled like asset markers
-  const createPingIcon = (type: string) => {
+  const getStatusColor = (status: string) => {
+    if (status === "Critical") return "#ef4444"; // Red
+    if (status === "Warning") return "#f59e0b"; // Yellow
+    return "#10b981"; // Green
+  };
+
+  const createPingIcon = (type: string, status: string = "Normal") => {
+    if (type === "Feeders") {
+      const bgColor = getStatusColor(status);
+      const svgString = `
+        <svg width="40" height="50" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.2)"/>
+            </filter>
+          </defs>
+          <g filter="url(#shadow)">
+            <path d="M20 5 C12 5 5 12 5 20 C5 24 10 30 20 40 C30 30 35 24 35 20 C35 12 28 5 20 5"
+              fill="${bgColor}" stroke="white" stroke-width="3"/>
+            <text x="20" y="28" text-anchor="middle" fill="black" font-family="Arial, sans-serif" font-size="22" font-weight="bold">⚡</text>
+          </g>
+        </svg>
+      `;
+      return new Icon({
+        iconUrl: `data:image/svg+xml,${encodeURIComponent(svgString)}`,
+        iconSize: [40, 50],
+        iconAnchor: [20, 50],
+        popupAnchor: [0, -50],
+      });
+    }
     let color = "#64748b";
     let symbol = "●";
     let iconSymbol = "❓";
     let border = "#fff";
     switch (type) {
-      case "Substations":
-        color = "#f59e42";
-        iconSymbol = "⚡";
-        break;
       case "Transformers":
         color = "#38bdf8";
         iconSymbol = "T";
@@ -203,11 +228,18 @@ export function UtilityMap({
           <Marker
             key={`ping-${idx}`}
             position={[marker.lat, marker.lng]}
-            icon={createPingIcon(marker.type)}
+            icon={createPingIcon(marker.type, marker.status || "Normal")}
           >
             <Popup>
-              Ping: {marker.type} ({marker.lat.toFixed(4)},{" "}
-              {marker.lng.toFixed(4)})
+              <div>
+                <div className="font-semibold mb-1">
+                  {marker.name || "Feeder"}
+                </div>
+                <div className="mb-1">
+                  Load: {marker.load ? `${marker.load}%` : "N/A"}
+                </div>
+                <div className="mb-1">Status: {marker.status || "N/A"}</div>
+              </div>
             </Popup>
           </Marker>
         ))}

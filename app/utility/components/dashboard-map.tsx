@@ -50,8 +50,8 @@ export function DashboardMap({
 
   // Filter assets based on selected filter
   const filteredAssets = assets.filter((asset) => {
-    if (filter === "All") return true;
-    if (filter === "Substations") return asset.type === "substation";
+    // if (filter === "All") return true;
+    if (filter === "Feeders") return asset.type === "substation";
     if (filter === "Transformers") return asset.type === "transformer";
     if (filter === "Households") return asset.type === "household";
     if (filter === "DER's") return asset.type === "household" && asset.hasDers;
