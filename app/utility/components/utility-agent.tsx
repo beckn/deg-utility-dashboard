@@ -24,14 +24,15 @@ interface AgentChartData {
 }
 
 interface UtilityAgentProps {
+  initialMessage?: string
   onClose: () => void
 }
 
-export function UtilityAgent({ onClose }: UtilityAgentProps) {
+export function UtilityAgent({ initialMessage, onClose }: UtilityAgentProps) {
   const [messages, setMessages] = useState<AgentMessage[]>([
     {
       id: "1",
-      text: "Good morning! Based on your past 12 months of usage and roof geometry, you're an excellent candidate for rooftop solar + battery.\n\nWould you like me to prepare a personalized plan and begin coordination?",
+      text: initialMessage || "Good morning! Based on your past 12 months of usage and roof geometry, you're an excellent candidate for rooftop solar + battery.\n\nWould you like me to prepare a personalized plan and begin coordination?",
       isUser: false,
       timestamp: new Date(),
       charts: [],

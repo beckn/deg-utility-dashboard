@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
 import UtilityDashboard from "./components/utility-dashboard"
 
-export default function Page() {
+function Page() {
   return (
     <Suspense
       fallback={
@@ -17,4 +17,4 @@ export default function Page() {
   )
 }
 
-export default UtilityDashboard;
+export default Page;
