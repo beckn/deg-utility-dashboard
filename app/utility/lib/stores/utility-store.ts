@@ -1,70 +1,220 @@
-"use client"
+"use client";
 
-import { create } from "zustand"
-import { strapiClient } from "../api/strapi-client"
-import { simplifyUtilData } from "../utils/data-processor"
-import type { SimplifiedMeter } from "../types"
+import { create } from "zustand";
+import { strapiClient } from "../api/strapi-client";
+import {
+  simplifyUtilData,
+  simplifyUtilDataForDashboard,
+} from "../utils/data-processor";
+import type {
+  SimplifiedData,
+  MeterWithTransformer,
+  StrapiTransformer,
+  TransformerWithSubstation,
+} from "../types";
 
 type SimplifiedDataState = {
-  data: SimplifiedMeter[]
-  setData: (data: SimplifiedMeter[]) => void
-  clear: () => void
-  fetchAndStore: () => Promise<void>
-  selectedHouse: SimplifiedMeter | null
-  setSelectedHouse: (house: SimplifiedMeter | null) => void
-  isLoading: boolean
-  updateDerSettings: (meterId: number, newDersSettings: Array<{ id: number; isEnabled: boolean }>) => void
-}
+  data: SimplifiedData;
+  transformerData: StrapiTransformer[];
+  setData: (data: SimplifiedData) => void;
+  clear: () => void;
+  fetchAndStore: () => Promise<void>;
+  selectedHouse: MeterWithTransformer | null;
+  setSelectedHouse: (house: MeterWithTransformer | null) => void;
+  isLoading: boolean;
+  updateDerSettings: (
+    meterId: number,
+    newDersSettings: Array<{ id: number; isEnabled: boolean }>
+  ) => void;
+  fetchAndStoreTransformerData: (transformerId: number) => Promise<void>;
+  startStream: (transformerId: number) => Promise<void>;
+};
 
-export const useSimplifiedUtilDataStore = create<SimplifiedDataState>((set, get) => ({
-  data: [],
-  selectedHouse: null,
-  isLoading: false,
+export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
+  (set, get) => ({
+    data: {
+      substations: [],
+      transformers: [],
+      meters: [],
+    },
+    selectedHouse: null,
+    isLoading: false,
+    transformerData: [],
+    setSelectedHouse: (house) => set({ selectedHouse: house }),
 
-  setSelectedHouse: (house) => set({ selectedHouse: house }),
+    setData: (data) => set({ data }),
 
-  setData: (data) => set({ data }),
+    clear: () =>
+      set({ data: { substations: [], transformers: [], meters: [] } }),
 
-  clear: () => set({ data: [] }),
+    fetchAndStore: async () => {
+      set({ isLoading: true });
 
-  fetchAndStore: async () => {
-    set({ isLoading: true })
+      // Deep populate query for Strapi v4
+      const populateQuery =
+        "substations.transformers.meters.energyResource.ders.appliance";
 
-    // Deep populate query for Strapi v4
-    const populateQuery = "substations.transformers.meters.energyResource.ders.appliance"
-
-    const { data, error } = await strapiClient.GET("/meter-data-simulator/utility/detailed", {
-      populate: populateQuery,
-    })
-
-    if (error) {
-      console.error("Error fetching utility data from Strapi:", error)
-      set({ data: [], isLoading: false })
-      return
-    }
-
-    if (data && data.utilities) {
-      const simplified = simplifyUtilData(data)
-      set({ data: simplified, isLoading: false })
-    } else {
-      console.error("Fetched data is null or not in expected format (missing utilities array):", data)
-      set({ data: [], isLoading: false })
-    }
-  },
-
-  updateDerSettings: (meterId, newDersSettings) => {
-    set((state) => {
-      const updatedData = state.data.map((meter) => {
-        if (meter.meterId === meterId) {
-          const updatedDers = meter.ders.map((der) => {
-            const setting = newDersSettings.find((s) => s.id === der.id)
-            return setting ? { ...der, switched_on: setting.isEnabled } : der
-          })
-          return { ...meter, ders: updatedDers }
+      const { data, error } = await strapiClient.GET(
+        "/meter-data-simulator/utility/detailed",
+        {
+          populate: populateQuery,
         }
-        return meter
-      })
-      return { data: updatedData }
-    })
-  },
-}))
+      );
+
+      if (error) {
+        console.error("Error fetching utility data from Strapi:", error);
+        set({
+          data: { substations: [], transformers: [], meters: [] },
+          isLoading: false,
+        });
+        return;
+      }
+
+      if (data && data.utilities) {
+        const simplified = simplifyUtilData(data);
+        set({
+          data: simplified,
+          isLoading: false,
+          transformerData: simplifyUtilDataForDashboard(data),
+        });
+      } else {
+        console.error(
+          "Fetched data is null or not in expected format (missing utilities array):",
+          data
+        );
+        set({
+          data: { substations: [], transformers: [], meters: [] },
+          isLoading: false,
+        });
+      }
+    },
+
+    fetchAndStoreTransformerData: async (transformerId: number) => {
+      get().startStream(transformerId);
+    },
+
+    startStream: async (transformerId: number) => {
+      const url = `https://playground.becknprotocol.io/meter-data-simulator/transformer-load-streamed/${transformerId}`;
+      const reconnectDelay = 5000;
+      let reconnectAttempts = 0;
+      const maxReconnects = 5;
+      let abortController: AbortController | null = null;
+
+      const connect = async () => {
+        try {
+          // Cancel any existing connection
+          if (abortController) {
+            abortController.abort();
+          }
+
+          // Create new abort controller for this connection
+          abortController = new AbortController();
+
+          const response = await fetch(url);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          if (!response.body) {
+            throw new Error("ReadableStream not supported");
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+
+          const readChunk = async () => {
+            try {
+              const { done, value } = await reader.read();
+
+              if (done) {
+                console.log("Stream complete.");
+                return;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+
+              for (const line of lines) {
+                if (line.trim()) {
+                  try {
+                    const parsedArr = JSON.parse(line);
+                    const newObj = Array.isArray(parsedArr)
+                      ? parsedArr[0]
+                      : parsedArr;
+                    const newTransformerData = {
+                      id: newObj.transformer.id,
+                      name: newObj.transformer.name,
+                      city: newObj.transformer.city,
+                      state: newObj.transformer.state,
+                      latitude: newObj.transformer.latitude,
+                      longtitude: newObj.transformer.longtitude,
+                      pincode: newObj.transformer.pincode,
+                      max_capacity_KW: newObj.transformer.max_capacity_KW,
+                      status: newObj.health_status,
+                      currentLoad: newObj.load_percentage,
+                      margin: newObj.margin_percentage,
+                    } as TransformerWithSubstation;
+
+                    set((state) => {
+                      const filtered = state.data.transformers.filter(
+                        (t) => t.id !== newTransformerData.id
+                      );
+                      return {
+                        data: {
+                          substations: state.data.substations,
+                          transformers: [...filtered, newTransformerData],
+                          meters: state.data.meters,
+                        },
+                      };
+                    });
+                  } catch (e) {
+                    console.warn("Error parsing line:", e);
+                  }
+                }
+              }
+              return readChunk();
+            } catch (error: any) {
+              if (error.name === "AbortError") {
+                console.log("Stream aborted");
+                return;
+              }
+              console.error("Error reading chunk:", error);
+            }
+          };
+
+          return readChunk();
+        } catch (err) {
+          console.error("Connection error");
+        }
+      };
+
+      // Start the connection
+      connect();
+    },
+
+    updateDerSettings: (meterId, newDersSettings) => {
+      set((state) => {
+        const updatedData = state.data.meters.map((meter) => {
+          if (meter.id === meterId) {
+            const updatedDers = meter.ders.map((der) => {
+              const setting = newDersSettings.find((s) => s.id === der.id);
+              return setting ? { ...der, switched_on: setting.isEnabled } : der;
+            });
+            return { ...meter, ders: updatedDers };
+          }
+          return meter;
+        });
+        return {
+          data: {
+            substations: state.data.substations,
+            transformers: state.data.transformers,
+            meters: updatedData,
+          },
+        };
+      });
+    },
+  })
+);

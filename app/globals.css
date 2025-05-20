@@ -122,3 +122,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom tab styling for utility-dashboard map filter tabs */
+.custom-tab[data-state="active"] {
+  background-color: var(--color-blue-700); /* Tailwind blue-700 */
+  box-shadow: var(--shadow-md);
+  color: #fff;
+}
+.custom-tab[data-state="inactive"] {
+  background-color: transparent;
+  color: rgba(255,255,255,0.8);
+}
+
+.chat-input-message {
+  background-color: #334155;
+}
+
+

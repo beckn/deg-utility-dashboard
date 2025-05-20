@@ -13,33 +13,37 @@ import UtilityAgent from "@/components/UtilityAgent"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProcessedData } from "../lib/hooks/use-processed-data"
-import type { SimplifiedMeter } from "../lib/types"
+import type { MeterWithTransformer } from "../lib/types"
 
 export default function UtilityDashboard() {
-  const { fetchAndStore, isLoading, selectedHouse, setSelectedHouse } = useSimplifiedUtilDataStore()
+  const { fetchAndStore, fetchAndStoreTransformerData, isLoading, selectedHouse, setSelectedHouse, transformerData } = useSimplifiedUtilDataStore()
   const [isAgentOpen, setIsAgentOpen] = useState(false)
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false)
-  const [selectedFilter, setSelectedFilter] = useState("All")
+  const [selectedFilter, setSelectedFilter] = useState("Transformers")
 
-  const { allAssets, systemMetrics, transformerSummaries } = useProcessedData()
+  const { allAssets, systemMetrics, transformerSummaries, } = useProcessedData()
 
   useEffect(() => {
     fetchAndStore()
   }, [fetchAndStore])
 
-  const handleOpenControlPanel = (meterData: SimplifiedMeter) => {
+  useEffect(() => {
+    transformerData.forEach(transformer => {
+      fetchAndStoreTransformerData(Number(transformer.id))
+    })
+  }, [fetchAndStoreTransformerData, transformerData])
+
+  const handleOpenControlPanel = (meterData: MeterWithTransformer) => {
     setSelectedHouse(meterData)
     setIsControlPanelOpen(true)
   }
 
   const handleApplyControlPanelSettings = (
-    houseData: SimplifiedMeter,
+    houseData: MeterWithTransformer,
     newDersSettings: Array<{ id: number; isEnabled: boolean }>,
   ) => {
-    console.log("Applying settings for house:", houseData.meterId, "New DERs:", newDersSettings)
-
     // Update the store with new DER settings
-    useSimplifiedUtilDataStore.getState().updateDerSettings(houseData.meterId, newDersSettings)
+    useSimplifiedUtilDataStore.getState().updateDerSettings(houseData.id, newDersSettings)
 
     setIsControlPanelOpen(false)
     setSelectedHouse(null)
@@ -75,20 +79,20 @@ export default function UtilityDashboard() {
                   <SelectItem value="San Francisco">San Francisco</SelectItem>
                 </SelectContent>
               </Select>
-              <Tabs
-                defaultValue="All"
-                value={selectedFilter}
-                onValueChange={setSelectedFilter}
-                className="w-full sm:w-auto"
-              >
-                <TabsList className="grid grid-cols-3 sm:grid-cols-5">
-                  <TabsTrigger value="All">All</TabsTrigger>
-                  <TabsTrigger value="Substations">Substations</TabsTrigger>
-                  <TabsTrigger value="Transformers">Transformers</TabsTrigger>
-                  <TabsTrigger value="Households">Households</TabsTrigger>
-                  <TabsTrigger value="DER's">DER's</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="w-full flex justify-end">
+                <Tabs
+                  defaultValue="Transformers"
+                  value={selectedFilter}
+                  onValueChange={setSelectedFilter}
+                  className=""
+                >
+                  <TabsList className="flex flex-row gap-2 px-1 py-1 bg-[#232e47] rounded-lg shadow border border-[#232e47]">
+                    <TabsTrigger value="Transformers" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Feeders</TabsTrigger>
+                    <TabsTrigger value="Substations" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Substations</TabsTrigger>
+                    <TabsTrigger value="Households" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Households</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
             <div className="flex-1 rounded-lg overflow-hidden border border-border">
               <DashboardMap assets={allAssets} filter={selectedFilter} onSelectMeter={handleOpenControlPanel} />

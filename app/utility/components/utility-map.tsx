@@ -1,20 +1,20 @@
 "use client"
 
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-import { Icon } from "leaflet"
+import { BaseIconOptions, Icon } from "leaflet"
 import "leaflet/dist/leaflet.css"
-import type { AssetMarker, SimplifiedMeter, AssetType } from "../lib/types" // Changed FeederData to AssetMarker, added AssetType
+import type { AssetMarker, MeterWithTransformer, AssetType } from "../lib/types" // Changed FeederData to AssetMarker, added AssetType
 import { StatusBadge } from "./status-badge"
 import { Button } from "@/components/ui/button"
-
+import { GetCustomMapMarker } from "../lib/utils/custom-icon"
 interface UtilityMapProps {
   assets: AssetMarker[] // Changed feeders to assets
-  onSelectMeter?: (meter: SimplifiedMeter) => void
+  onSelectMeter?: (meter: MeterWithTransformer) => void
 }
 
 export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Changed feeders to assets
   const createAssetIcon = (type: AssetType, status: "Critical" | "Warning" | "Normal" = "Normal") => {
-    let iconColor = "#10b981" // Default green (Normal)
+    let iconColor = "#2463EB" // Default blue (Normal)
     let symbol = "❓"
 
     if (status === "Critical") iconColor = "#ef4444" // Red
@@ -26,25 +26,19 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Chan
         break
       case "transformer":
         symbol = "T" // T for transformer
-        iconColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#3b82f6"; // Blue for normal transformer
+        iconColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#3b82f6"; // Blue for normal transformer #2463EB
         break
       case "household":
         symbol = "🏠" // House for household
-        iconColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#10b981"; // Green for normal household
+        iconColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#2463EB"; // Green for normal household
         break
       default:
         symbol = "📍" // Default pin
         break
     }
 
-    const svgString = `<svg width="40" height="50" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg"><defs><filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.2)"/></filter></defs><g filter="url(#shadow)"><path d="M20 5 C12 5 5 12 5 20 C5 24 10 30 20 40 C30 30 35 24 35 20 C35 12 28 5 20 5" fill="${iconColor}" stroke="white" strokeWidth="3"/><text x="20" y="24" textAnchor="middle" fill="white" fontFamily="Arial, sans-serif" fontSize="16" fontWeight="bold">${symbol}</text></g></svg>`
-
-    return new Icon({
-      iconUrl: `data:image/svg+xml,${encodeURIComponent(svgString)}`,
-      iconSize: [40, 50],
-      iconAnchor: [20, 50],
-      popupAnchor: [0, -50],
-    })
+    const iconDetails = GetCustomMapMarker({type, color: iconColor})
+    return new Icon(iconDetails as BaseIconOptions)
   }
 
   const centerLat =
@@ -84,14 +78,14 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Chan
                 )}
               </div>
 
-              {asset.type === "household" && onSelectMeter && (
+              {/* {asset.type === "household" && onSelectMeter && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
                    <Button
                     variant="outline"
                     size="sm"
                     className="w-full mt-1 text-xs h-6"
                     onClick={() => {
-                        // This needs to be tied to the actual SimplifiedMeter data for the control panel
+                        // This needs to be tied to the actual MeterWithTransformer data for the control panel
                         // For now, we're passing a placeholder. This part needs actual meter data.
                         // The 'asset.id' for household is `house_${meter.meterId}`. We need to extract meterId.
                         const meterId = parseInt(asset.id.replace("house_", ""), 10)
@@ -99,14 +93,14 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Chan
                           meterId: meterId,
                           meterCode: asset.name,
                           ders: [],
-                        } as unknown as SimplifiedMeter
+                        } as unknown as MeterWithTransformer
                         onSelectMeter(dummyMeter)
                       }}
                   >
                     Control Panel
                   </Button>
                 </div>
-              )}
+              )} */}
             </div>
           </Popup>
         </Marker>

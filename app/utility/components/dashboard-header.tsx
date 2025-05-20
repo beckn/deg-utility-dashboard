@@ -11,7 +11,7 @@ export function DashboardHeader() {
       </div>
       <div className="flex items-center gap-4">
         {/* Theme Toggle */}
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">🌞</span>
           <Switch
             checked={theme === "dark"}
@@ -19,7 +19,7 @@ export function DashboardHeader() {
             aria-label="Toggle dark mode"
           />
           <span className="text-xs text-muted-foreground">🌙</span>
-        </div>
+        </div> */}
         {/* Avatar or user icon can go here */}
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
           <span role="img" aria-label="avatar">👤</span>

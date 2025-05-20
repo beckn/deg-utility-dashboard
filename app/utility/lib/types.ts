@@ -36,6 +36,8 @@ export interface TransformerSummaryItem {
   currentLoad: number // Percentage load for this transformer
   status: "Critical" | "Warning" | "Normal"
   metersCount: number
+  maxCapacity: number
+  margin: number
 }
 
 export type MetricData = {
@@ -90,6 +92,7 @@ export interface StrapiMeter {
   consumptionLoadFactor: number
   productionLoadFactor: number
   energyResource?: StrapiEnergyResource
+  ders: StrapiDer[]
 }
 
 export interface StrapiTransformer {
@@ -101,6 +104,9 @@ export interface StrapiTransformer {
   longtitude: string
   pincode: string
   max_capacity_KW: number
+  status?: "Critical" | "Warning" | "Normal"
+  currentLoad?: number
+  margin?: number
   meters: StrapiMeter[]
 }
 
@@ -147,6 +153,7 @@ export interface SimplifiedMeter {
   transformerName: string
   transformerCity: string
   transformerState: string
+  transformerMaxCapacityKW: number
   meterId: number
   meterCode: string
   meterType: string
@@ -161,6 +168,7 @@ export interface SimplifiedMeter {
   energyResourceId?: number
   energyResourceName?: string
   energyResourceType?: string
+  energyResource?: StrapiEnergyResource | null
   ders: {
     id: number
     switched_on: boolean
@@ -179,4 +187,24 @@ export interface ProcessedMeter {
   capacity: number
   status: "Critical" | "Warning" | "Normal"
   energyResourceName?: string
+}
+
+export type SubstationWithUtility = StrapiSubstation & {
+  utilityId: number;
+  utilityName: string;
+  utilityCity: string;
+  utilityState: string;
+  utilityLatitude: string;
+  utilityLongtitude: string;
+  utilityPincode: string;
+};
+
+export type TransformerWithSubstation = StrapiTransformer & SubstationWithUtility;
+
+export type MeterWithTransformer = StrapiMeter & TransformerWithSubstation;
+
+export interface SimplifiedData {
+  substations: SubstationWithUtility[];
+  transformers: TransformerWithSubstation[];
+  meters: MeterWithTransformer[];
 }

@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { SimplifiedMeter } from "../lib/types"
+import type { MeterWithTransformer } from "../lib/types"
 
 interface ControlPanelProps {
-  house: SimplifiedMeter
+  house: MeterWithTransformer
   isLoading: boolean
   onClose: () => void
-  onApplySettings: (houseData: SimplifiedMeter, newDersSettings: Array<{ id: number; isEnabled: boolean }>) => void
+  onApplySettings: (houseData: MeterWithTransformer, newDersSettings: Array<{ id: number; isEnabled: boolean }>) => void
 }
 
 export function ControlPanel({ house, isLoading, onClose, onApplySettings }: ControlPanelProps) {
@@ -20,8 +20,8 @@ export function ControlPanel({ house, isLoading, onClose, onApplySettings }: Con
   const [dersState, setDersState] = useState(() =>
     house.ders.map((der) => ({
       id: der.id,
-      name: der.applianceName,
-      currentLoad: der.appliancePowerRating,
+      name: der.appliance.name,
+      currentLoad: der.appliance.powerRating,
       isEnabled: der.switched_on,
     })),
   )
@@ -39,7 +39,7 @@ export function ControlPanel({ house, isLoading, onClose, onApplySettings }: Con
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{house.meterCode} Control Panel</DialogTitle>
+          <DialogTitle>{house.code} Control Panel</DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh] overflow-y-auto pr-2 mt-4">
