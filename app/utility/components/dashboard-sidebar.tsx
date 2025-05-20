@@ -1,14 +1,16 @@
-import type { TransformerSummaryItem } from "../lib/types"
-import { FeederAuditTabs } from "./feeder-audit-tabs"
+import type { TransformerSummaryItem } from "../lib/types";
+import { FeederAuditTabs } from "./feeder-audit-tabs";
 
 interface DashboardSidebarProps {
-  transformerSummaries: TransformerSummaryItem[]
+  transformerSummaries: TransformerSummaryItem[];
 }
 
-export function DashboardSidebar({ transformerSummaries }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  transformerSummaries,
+}: DashboardSidebarProps) {
   return (
     <div>
-     <FeederAuditTabs />  
+      <FeederAuditTabs feeders={transformerSummaries} />
     </div>
-  )
+  );
 }
