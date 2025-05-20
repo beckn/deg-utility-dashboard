@@ -9,6 +9,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   charts?: ChartData[];
+  type?: string;
 }
 
 interface ChartData {
@@ -24,21 +25,35 @@ interface UtilityAgentProps {
   initialMessage?: string;
 }
 
+const conversationFlow = [
+  { sender: 'agent', text: 'Alert: Grid Stress Detected – Capacity Breach Likely in 30 Minutes' },
+  { sender: 'agent', text: `Feeder status summary:\n\nM12:\nRegion: Bernal Heights\nCapacity: 1.2 MW\nCurrent Load: 1.07 MW (89%)\n\nInner Richmond:\nRegion : Outer Sunset / Parkside\nCapacity: 1.4 MW\nCurrent Load: 1.22 MW (87%)\n\nS7:\nRegion : Outer Sunset / Parkside\nCapacity: 1.5 MW\nCurrent Load: 1.26vMW (84%)` },
+  { sender: 'agent', text: 'Should mitigation options be displayed?' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: 'Mitigation Options – Feeder M12 Target newly onboarded DER homes in Bernal Heights Estimated Relief: 320 kW Risk Level: Low Filters: Auto-consent, low-latency devices Combine DER curtailment, battery dispatch, and pause EV charging Estimated Relief: 850 kW Risk Level: Moderate Filters: Fallback Tier 1-ready, aggregator-controlled Full curtailment: DERs, batteries, and smart thermostat pre-cooling Estimated Relief: 1.7 MW Risk Level: High Filters: Includes fallback Tier 2, comfort trade-offs' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: 'Exclusions Applied: • Battery B3 (Precita Park) is offline for diagnostics • Six DERs flagged as essential-use or medical are excluded Confirm Initiation for Option B?' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: 'Initiating Option 2 • Commands routed through aggregators A1, A4, and B6 Actions dispatched: • 47 DER-enabled homes triggered • Battery Units B1 and B2 activated • EV charging paused for 22 sessions • Smart thermostats raised by 2°F • Water heaters delayed by 15 minutes • Consent checks completed via Residential Energy Agents Live Device Response: • 38 households accepted • 5 are pending • 4 declined: • 2 due to air quality sensor limits • 1 inverter unresponsive • 1 consent expired Should fallback be activated?' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: 'Fallback Tier 1 Activated • 17 additional thermostats and legacy EV ports triggered • Fallback contracts verified with aggregators • Tier 2 fallback staged with 5-second delay threshold • Mean device response time: 2.3 seconds • No violations of policy or consent detected Ready to log and tag the event?' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: 'Event Logged – ID: M12-0508-E03 • Fallback success rate: 91% • Average household reduction: 850 watts • Inverter issue sent to DER maintenance • Event recorded on DEG network with hash: 0xf7e1...9a2c • Timestamp: 2025-05-08 18:04:32 PST Would you like to view a DER performance summary?' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: 'Feeder M12 – DER Performance Summary (Past 30 Days) • 93 DER homes onboarded • Asset mix: 64 solar, 22 batteries, 38 thermostats • Participation rate: 87% • Median response latency: 2.1 seconds • Aggregator compliance: 100% • Fallback Tier 1 success across last 7 events: 91% Share with planning?' },
+  { sender: 'user', text: '' },
+  { sender: 'agent', text: '• Summary sent to Planning • DER availability map updated • Prediction model retrained All logs archived for audit and compliance' },
+];
+
 const UtilityAgent: React.FC<UtilityAgentProps> = ({
   onClose,
   initialMessage,
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text:
-        initialMessage ||
-        "Good morning! Based on your past 12 months of usage and roof geometry, you're an excellent candidate for rooftop solar + battery.\n\nWould you like me to prepare a personalized plan and begin coordination?",
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [step, setStep] = useState(0);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const [inputEnabled, setInputEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -46,66 +61,54 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (step < 3) {
+      setIsAgentTyping(true);
+      const timer = setTimeout(() => {
+        setIsAgentTyping(false);
+        setMessages((prev) => [...prev, {
+          id: Date.now().toString() + step,
+          text: conversationFlow[step].text,
+          isUser: false,
+          timestamp: new Date(),
+          type: "agent"
+        }]);
+        setStep((prev) => prev + 1);
+        if (step === 2) setInputEnabled(true);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
-
-    // Add user message
-    const userMessage: Message = {
+  const handleSendMessage = () => {
+    if (!inputText.trim() || !inputEnabled) return;
+    setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       text: inputText,
       isUser: true,
       timestamp: new Date(),
-    };
-
-    setMessages([...messages, userMessage]);
+      type: "user"
+    }]);
     setInputText("");
+    setInputEnabled(false);
 
-    // Call chat API
-    try {
-      const chatResponse = await fetch(
-        "https://api-deg-agents.becknprotocol.io/chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: inputText,
-            client_id: "test_123",
-            is_utility: true,
-          }),
-        }
-      );
-
-      const chatData = await chatResponse.json();
-
-      // Add agent response
-      const agentResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text:
-          chatData.message ||
-          chatData.response.message ||
-          "I apologize, but I'm having trouble understanding. Could you please rephrase that?",
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, agentResponse]);
-    } catch (error) {
-      console.error("Error getting chat response:", error);
-
-      // Add error message
-      const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, errorResponse]);
+    let nextStep = step + 1;
+    while (nextStep < conversationFlow.length && conversationFlow[nextStep].sender !== 'agent') {
+      nextStep++;
+    }
+    if (nextStep < conversationFlow.length) {
+      setIsAgentTyping(true);
+      setTimeout(() => {
+        setIsAgentTyping(false);
+        setMessages((prev) => [...prev, {
+          id: Date.now().toString() + nextStep,
+          text: conversationFlow[nextStep].text,
+          isUser: false,
+          timestamp: new Date(),
+          type: "agent"
+        }]);
+        setStep(nextStep);
+        setInputEnabled(true);
+      }, 1200);
     }
   };
 
@@ -188,73 +191,87 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       </div>
       {/* Messages */}
       <div
-        className="flex-1 px-6 py-4 overflow-y-auto flex flex-col gap-4 bg-card"
+        className="flex-1 px-6 py-4 overflow-y-auto flex flex-col-reverse gap-4 bg-card"
         style={{ minHeight: 0 }}
       >
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex flex-col ${
-              message.isUser ? "items-end" : "items-start"
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`text-xs ${
-                  message.isUser
-                    ? "text-blue-400"
-                    : "text-blue-300 font-semibold"
-                }`}
-              >
-                {message.isUser ? "You" : "Grid Agent"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-            <span
-              className={
-                message.isUser ? "text-blue-400" : "text-blue-300 font-semibold"
-              }
-            >
-              {message.isUser ? "You" : "Grid Agent"}
-            </span>
+        {[...messages].reverse().map((message, idx) => {
+          const isFirstGridAgentMsg =
+            messages.length - idx - 1 === 0 && !message.isUser;
+          return (
             <div
-              className={`mt-1 inline-block px-3 py-2 rounded-lg ${
-                message.isUser
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground"
-              }`}
+              key={message.id}
+              className={`flex flex-col ${
+                message.isUser ? "items-end" : "items-start"
+              } animate-slide-in-up`}
             >
-              {message.text}
-              {message.charts && (
-                <div className="mt-3 flex space-x-3 overflow-x-auto">
-                  {message.charts.map(renderChart)}
-                </div>
-              )}
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className={`text-xs font-semibold ${
+                    message.isUser
+                      ? "text-green-400"
+                      : "text-blue-300"
+                  }`}
+                >
+                  {message.isUser ? "Operator" : "Grid Agent"}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              <div
+                className={
+                  isFirstGridAgentMsg
+                    ? "mt-2 mb-2 inline-block px-4 py-3 rounded-lg bg-[#334155] text-white text-lg"
+                    : `mt-1 inline-block px-3 py-2 rounded-lg ${
+                        message.isUser
+                          ? "bg-blue-500 text-white"
+                          : "bg-[#334155] text-gray-100"
+                      }`
+                }
+              >
+                {message.text}
+                {('charts' in message) && Array.isArray((message as any).charts) && (message as any).charts.length > 0 && (
+                  <div className="mt-3 flex space-x-3 overflow-x-auto">
+                    {(message as any).charts.map(renderChart)}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {isAgentTyping && (
+          <div className="flex items-start mt-2">
+            <div className="px-4 py-2 bg-[#334155] text-gray-100 rounded-lg">
+              <span className="dot-typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
             </div>
           </div>
-        ))}
+        )}
         <div ref={messagesEndRef} />
       </div>
       {/* Input */}
-      <div className="p-3 border-t border-border flex items-center gap-2">
+      <div className="p-3 border-t border-border flex items-center gap-2 ">
         <input
           type="text"
-          className="flex-1 rounded-lg px-3 py-2 bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          className="flex-1 rounded-lg px-3 py-2 bg-[#475569] border border-border focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="Type a Message"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyPress}
+          disabled={!inputEnabled}
         />
         <button
           onClick={handleSendMessage}
-          className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition"
+          className="w-10 h-10 bg-[#224694] rounded-sm flex items-center justify-center hover:bg-[#1b356b] transition"
+          disabled={!inputEnabled}
         >
-          <Send className="w-5 h-5" />
+          <Send className="text-white rotate-40" />
         </button>
       </div>
     </div>

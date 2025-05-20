@@ -10,6 +10,8 @@ import { DashboardMap } from "./dashboard-map"
 import { ControlPanel } from "./control-panel"
 import { Button } from "@/components/ui/button"
 import UtilityAgent from "@/components/UtilityAgent"
+import { ProfilePanel } from "../components/profile-panel"
+import { AuditLogsPanel } from "../components/audit-logs-panel"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProcessedData } from "../lib/hooks/use-processed-data"
@@ -20,6 +22,7 @@ export default function UtilityDashboard() {
   const [isAgentOpen, setIsAgentOpen] = useState(false)
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState("All")
+  const [activePanel, setActivePanel] = useState<'profile' | 'audit' | 'controls'>("profile")
 
   const { allAssets, systemMetrics, transformerSummaries } = useProcessedData()
 
@@ -56,7 +59,7 @@ export default function UtilityDashboard() {
 
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground">
-      <DashboardHeader />
+      <DashboardHeader onSelectPanel={setActivePanel} activePanel={activePanel} />
       <div className="h-[calc(100vh-4rem)] flex flex-row p-2 gap-2 bg-background">
         {/* Left: Sidebar */}
         <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
@@ -98,7 +101,7 @@ export default function UtilityDashboard() {
         {/* Right: UtilityAgent Chat Panel */}
         <div className="w-[400px] min-w-[320px] max-w-md flex-shrink-0 h-full bg-card rounded-lg shadow border border-border">
           <div className="h-full flex flex-col">
-            <UtilityAgent initialMessage="Hi! How can I help you today?" onClose={() => {}} />
+            <UtilityAgent initialMessage="Alert: Grid Stress Detected – Capacity Breach Likely in 30 Minutes" onClose={() => {}} />
           </div>
         </div>
       </div>
