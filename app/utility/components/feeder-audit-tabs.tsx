@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StatusBadge } from "./status-badge";
 
 const AUDIT_DATA = [
@@ -71,6 +71,30 @@ interface FeederAuditTabsProps {
 
 export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsProps) {
   const [tab, setTab] = useState("feeder");
+  const [visibleCount, setVisibleCount] = useState(1);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (tab === "audit") {
+      setVisibleCount(1);
+      timer = setInterval(() => {
+        setVisibleCount((prev) => {
+          if (prev < AUDIT_DATA.length) {
+            return prev + 1;
+          } else {
+            if (timer) clearInterval(timer);
+            return prev;
+          }
+        });
+      }, 3000);
+    } else {
+      setVisibleCount(1);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [tab]);
+
   return (
     <div className="w-full max-w-md mx-auto bg-[#181A20] rounded-2xl p-0 shadow-lg">
       {/* Tabs */}
@@ -148,10 +172,15 @@ export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsP
           </div>
         ) : (
           <div className="space-y-4">
-            {AUDIT_DATA.map((item) => (
+            {AUDIT_DATA.slice(0, visibleCount).map((item, index) => (
               <div
                 key={item.id}
-                className="bg-[#23243A] rounded-lg p-4 shadow border border-[#23243A]"
+                className="bg-[#23243A] rounded-lg p-4 shadow border border-[#23243A] animate-fade-in"
+                style={{
+                  opacity: 0,
+                  animation: 'fadeInUp 0.5s ease forwards',
+                  animationDelay: '0ms',
+                }}
               >
                 <div className="font-semibold text-white text-base underline mb-1">
                   {item.name}
@@ -192,6 +221,18 @@ export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsP
           </div>
         )}
       </div>
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
