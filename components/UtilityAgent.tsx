@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, X, Minimize2, BarChart3 } from "lucide-react";
+import { Send, X, Minimize2, BarChart3, AlertTriangle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -10,6 +10,9 @@ interface Message {
   isUser: boolean;
   timestamp: string;
   charts?: ChartData[];
+  isLoading?: boolean;
+  type?: string;
+  transformerData?: any;
 }
 
 interface ChartData {
@@ -45,6 +48,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
   const [inputText, setInputText] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for processing
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const clientIdRef = useRef<string | null>(null);
@@ -65,13 +69,20 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
 
     // Cleanup on unmount
     return () => {
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      if (socketRef.current) {
         socketRef.current.close();
       }
     };
   }, []);
 
   const connectWebSocket = () => {
+    // Don't reconnect if already connected
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      console.log("WebSocket already connected");
+      setIsConnecting(false);
+      return;
+    }
+    
     setIsConnecting(true);
     setConnectionError(null);
     
@@ -96,27 +107,54 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
           localStorage.setItem('grid_utility_client_id', response.client_id);
         }
 
+        // Handle grid alerts
+        if (response.status === 'alert' || (response.type === 'grid_alert' && response.status === 'success')) {
+          const alertMessage: Message = {
+            id: generateMessageId(),
+            text: response.message,
+            isUser: false,
+            timestamp: new Date().toISOString(),
+            type: 'grid_alert',
+            transformerData: response.transformer_data
+          };
+          
+          setMessages(prev => [...prev, alertMessage]);
+          
+          // If this is an alert with status 'success', we've already handled it
+          if (response.status === 'success') {
+            return;
+          }
+        }
+
         // Handle different response types
         switch (response.status) {
           case 'connected':
             console.log('Connected to grid-utility AI');
             break;
           case 'processing':
-            // Could add a typing indicator here
+            // Set processing state to true
+            setIsProcessing(true);
             break;
           case 'success':
-            // Add AI response to messages
-            if (response.message) {
+            // Set processing state to false
+            setIsProcessing(false);
+            
+            // Add AI response to messages (if not already handled as a grid alert)
+            if (response.message && response.type !== 'grid_alert') {
               const agentResponse: Message = {
                 id: generateMessageId(),
                 text: response.message,
                 isUser: false,
                 timestamp: new Date().toISOString(),
+                type: response.type
               };
               setMessages(prev => [...prev, agentResponse]);
             }
             break;
           case 'error':
+            // Set processing state to false
+            setIsProcessing(false);
+            
             console.error('WebSocket error:', response.message);
             const errorResponse: Message = {
               id: generateMessageId(),
@@ -129,6 +167,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
+        setIsProcessing(false);
       }
     };
 
@@ -136,10 +175,13 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       console.error("WebSocket error:", error);
       setConnectionError("Failed to connect to the utility agent");
       setIsConnecting(false);
+      setIsProcessing(false);
     };
 
     socket.onclose = (event) => {
       console.log("WebSocket connection closed:", event.code, event.reason);
+      setIsConnecting(false);
+      setIsProcessing(false);
       
       // Attempt to reconnect if closed unexpectedly
       if (event.code !== 1000) {
@@ -152,16 +194,8 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
     };
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+  const handleSendMessage = () => {
+    if (!inputText.trim() || isConnecting) return;
 
     // Add user message
     const userMessage: Message = {
@@ -171,18 +205,26 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       timestamp: new Date().toISOString(),
     };
 
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputText("");
 
-    // Send message via WebSocket
+    // Ensure we scroll to the bottom
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+
+    // Send message to WebSocket if connected
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       const message = {
         query: inputText,
         client_id: clientIdRef.current
       };
+      
       socketRef.current.send(JSON.stringify(message));
     } else {
-      // WebSocket not connected, try to reconnect
+      console.error("WebSocket not connected");
+      
+      // Attempt to reconnect
       connectWebSocket();
       
       // Add error message
@@ -193,8 +235,27 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorResponse]);
+      
+      // Queue the message to be sent once reconnected
+      setTimeout(() => {
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+          const message = {
+            query: inputText,
+            client_id: clientIdRef.current
+          };
+          socketRef.current.send(JSON.stringify(message));
+        }
+      }, 3000);
     }
   };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isProcessing]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -205,48 +266,19 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
 
   const renderChart = (chart: ChartData) => {
     return (
-      <div key={chart.id} className="bg-white p-3 rounded-lg shadow-sm w-32">
-        <h4 className="text-xs font-medium text-gray-600 mb-2">
-          {chart.title}
-        </h4>
-        <div className="relative w-20 h-20 mx-auto mb-2">
-          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="35"
-              stroke="#e5e7eb"
-              strokeWidth="6"
-              fill="none"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="35"
-              stroke={chart.color}
-              strokeWidth="6"
-              fill="none"
-              strokeDasharray={`${chart.value * 2.2} 220`}
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-lg font-bold text-gray-800">
-              {chart.value}%
-            </span>
-          </div>
+      <div
+        key={chart.id}
+        className="min-w-[200px] p-3 rounded-lg bg-background border border-border"
+      >
+        <div className="text-sm font-medium mb-2">{chart.title}</div>
+        <div className="text-2xl font-bold" style={{ color: chart.color }}>
+          {chart.value}
         </div>
-        <div className="space-y-1 text-xs">
-          {chart.data.map((item) => (
-            <div key={item.name} className="flex justify-between">
-              <div className="flex items-center space-x-1">
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-gray-600">{item.name}</span>
-              </div>
-              <span className="font-medium">{item.value}K</span>
+        <div className="mt-2 space-y-1">
+          {chart.data.map((item, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span>{item.name}</span>
+              <span style={{ color: item.color }}>{item.value}</span>
             </div>
           ))}
         </div>
@@ -281,6 +313,19 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       console.error("Error rendering markdown:", error);
       return message.text;
     }
+  };
+
+  // Get message class based on type
+  const getMessageClass = (message: Message) => {
+    if (message.isUser) {
+      return "bg-primary text-primary-foreground";
+    }
+    
+    if (message.type === 'grid_alert') {
+      return "bg-amber-50 border-l-4 border-amber-500 text-amber-800";
+    }
+    
+    return "chat-input-message text-foreground";
   };
 
   return (
@@ -328,13 +373,14 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
               <span className="text-xs text-muted-foreground">
                 {formatTime(message.timestamp)}
               </span>
+              {message.type === 'grid_alert' && (
+                <span className="text-xs text-amber-600 flex items-center">
+                  <AlertTriangle className="w-3 h-3 mr-1" /> Alert
+                </span>
+              )}
             </div>
             <div
-              className={`mt-1 inline-block px-3 py-2 rounded-lg ${
-                message.isUser
-                  ? "bg-primary text-primary-foreground"
-                  : "chat-input-message text-foreground"
-              }`}
+              className={`mt-1 inline-block px-3 py-2 rounded-lg ${getMessageClass(message)}`}
             >
               {renderMessageContent(message)}
               {message.charts && (
@@ -345,6 +391,30 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
             </div>
           </div>
         ))}
+        
+        {/* Processing indicator */}
+        {isProcessing && (
+          <div className="flex items-start mt-2">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs text-blue-300 font-semibold">
+                  Grid Agent
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {formatTime(new Date().toISOString())}
+                </span>
+              </div>
+              <div className="mt-1 inline-block px-3 py-2 rounded-lg chat-input-message text-foreground">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
       {/* Input */}
@@ -370,6 +440,47 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
           <Send className="w-5 h-5" />
         </button>
       </div>
+      
+      {/* CSS for typing indicator */}
+      <style jsx>{`
+        .typing-indicator {
+          display: flex;
+          align-items: center;
+        }
+        
+        .typing-indicator span {
+          height: 8px;
+          width: 8px;
+          margin: 0 1px;
+          background-color: #8B5CF6;
+          border-radius: 50%;
+          display: inline-block;
+          opacity: 0.4;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+          animation: pulse 1s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+          animation: pulse 1s infinite ease-in-out 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+          animation: pulse 1s infinite ease-in-out 0.4s;
+        }
+        
+        @keyframes pulse {
+          0%, 60%, 100% {
+            transform: scale(1);
+            opacity: 0.4;
+          }
+          30% {
+            transform: scale(1.5);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };
