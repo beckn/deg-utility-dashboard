@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Send, X, Minimize2, BarChart3 } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
-  timestamp: Date;
+  timestamp: string;
   charts?: ChartData[];
 }
 
@@ -28,18 +29,128 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
   onClose,
   initialMessage,
 }) => {
+  // Generate a stable ID for the initial message
+  const initialMessageId = useRef(`initial-${Math.random().toString(36).substring(2, 11)}`).current;
+  
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
+      id: initialMessageId,
       text:
         initialMessage ||
         "Good morning! Based on your past 12 months of usage and roof geometry, you're an excellent candidate for rooftop solar + battery.\n\nWould you like me to prepare a personalized plan and begin coordination?",
       isUser: false,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     },
   ]);
   const [inputText, setInputText] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const clientIdRef = useRef<string | null>(null);
+  const messageIdCounter = useRef(1);
+
+  // Generate stable IDs for messages
+  const generateMessageId = () => {
+    return `msg-${messageIdCounter.current++}`;
+  };
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    // Try to get stored client ID
+    clientIdRef.current = localStorage.getItem('grid_utility_client_id');
+    
+    // Connect to WebSocket
+    connectWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.close();
+      }
+    };
+  }, []);
+
+  const connectWebSocket = () => {
+    setIsConnecting(true);
+    setConnectionError(null);
+    
+    // Create WebSocket connection using environment variable
+    const wsUrl = process.env.NEXT_PUBLIC_GRID_UTILITY_WS_URL || 'wss://api-deg-agents.becknprotocol.io/grid-utility/ws';
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("WebSocket connection established");
+      setIsConnecting(false);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const response = JSON.parse(event.data);
+        console.log("WebSocket message received:", response);
+
+        // Store client ID if provided
+        if (response.client_id) {
+          clientIdRef.current = response.client_id;
+          localStorage.setItem('grid_utility_client_id', response.client_id);
+        }
+
+        // Handle different response types
+        switch (response.status) {
+          case 'connected':
+            console.log('Connected to grid-utility AI');
+            break;
+          case 'processing':
+            // Could add a typing indicator here
+            break;
+          case 'success':
+            // Add AI response to messages
+            if (response.message) {
+              const agentResponse: Message = {
+                id: generateMessageId(),
+                text: response.message,
+                isUser: false,
+                timestamp: new Date().toISOString(),
+              };
+              setMessages(prev => [...prev, agentResponse]);
+            }
+            break;
+          case 'error':
+            console.error('WebSocket error:', response.message);
+            const errorResponse: Message = {
+              id: generateMessageId(),
+              text: `Error: ${response.message || 'Something went wrong'}`,
+              isUser: false,
+              timestamp: new Date().toISOString(),
+            };
+            setMessages(prev => [...prev, errorResponse]);
+            break;
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setConnectionError("Failed to connect to the utility agent");
+      setIsConnecting(false);
+    };
+
+    socket.onclose = (event) => {
+      console.log("WebSocket connection closed:", event.code, event.reason);
+      
+      // Attempt to reconnect if closed unexpectedly
+      if (event.code !== 1000) {
+        setTimeout(() => {
+          if (socketRef.current?.readyState !== WebSocket.OPEN) {
+            connectWebSocket();
+          }
+        }, 3000);
+      }
+    };
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,58 +165,34 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
 
     // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       text: inputText,
       isUser: true,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     setMessages([...messages, userMessage]);
     setInputText("");
 
-    // Call chat API
-    try {
-      const chatResponse = await fetch(
-        "https://api-deg-agents.becknprotocol.io/chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: inputText,
-            client_id: "test_123",
-            is_utility: true,
-          }),
-        }
-      );
-
-      const chatData = await chatResponse.json();
-
-      // Add agent response
-      const agentResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text:
-          chatData.message ||
-          chatData.response.message ||
-          "I apologize, but I'm having trouble understanding. Could you please rephrase that?",
-        isUser: false,
-        timestamp: new Date(),
+    // Send message via WebSocket
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      const message = {
+        query: inputText,
+        client_id: clientIdRef.current
       };
-
-      setMessages((prev) => [...prev, agentResponse]);
-    } catch (error) {
-      console.error("Error getting chat response:", error);
-
+      socketRef.current.send(JSON.stringify(message));
+    } else {
+      // WebSocket not connected, try to reconnect
+      connectWebSocket();
+      
       // Add error message
       const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
+        id: generateMessageId(),
+        text: "Connection to the utility agent was lost. Attempting to reconnect...",
         isUser: false,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
-
-      setMessages((prev) => [...prev, errorResponse]);
+      setMessages(prev => [...prev, errorResponse]);
     }
   };
 
@@ -167,6 +254,35 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
     );
   };
 
+  // Format timestamp string to display time
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Render message content with or without markdown
+  const renderMessageContent = (message: Message) => {
+    if (message.isUser) {
+      return message.text;
+    }
+    
+    // For non-user messages, try to render markdown
+    try {
+      return (
+        <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-1">
+          <ReactMarkdown>{message.text}</ReactMarkdown>
+        </div>
+      );
+    } catch (error) {
+      console.error("Error rendering markdown:", error);
+      return message.text;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-card text-foreground rounded-lg border border-border">
       {/* Header */}
@@ -177,7 +293,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
             </div>
             <span className="ml-3 text-xs text-green-400 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>{" "}
-              Online
+              {isConnecting ? "Connecting..." : "Online"}
             </span>
         </div>
       </div>
@@ -186,6 +302,12 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
         className="flex-1 px-6 py-4 overflow-y-auto flex flex-col gap-1 bg-card"
         style={{ minHeight: 0 }}
       >
+        {connectionError && (
+          <div className="bg-red-50 text-red-500 p-2 rounded-md mb-2 text-sm">
+            {connectionError}
+          </div>
+        )}
+        
         {messages.map((message) => (
           <div
             key={message.id}
@@ -204,20 +326,9 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
                 {message.isUser ? "You" : "Grid Agent"}
               </span>
               <span className="text-xs text-muted-foreground">
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })}
+                {formatTime(message.timestamp)}
               </span>
             </div>
-            {/* <span
-              className={
-                message.isUser ? "text-blue-400" : "text-blue-300 font-semibold"
-              }
-            >
-              {message.isUser ? "You" : "Grid Agent"}
-            </span> */}
             <div
               className={`mt-1 inline-block px-3 py-2 rounded-lg ${
                 message.isUser
@@ -225,7 +336,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
                   : "chat-input-message text-foreground"
               }`}
             >
-              {message.text}
+              {renderMessageContent(message)}
               {message.charts && (
                 <div className="mt-3 flex space-x-3 overflow-x-auto">
                   {message.charts.map(renderChart)}
@@ -245,10 +356,16 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyPress}
+          disabled={isConnecting}
         />
         <button
           onClick={handleSendMessage}
-          className="bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition"
+          className={`rounded-full p-2 transition ${
+            isConnecting 
+              ? "bg-gray-300 cursor-not-allowed" 
+              : "bg-primary text-primary-foreground hover:bg-primary/90"
+          }`}
+          disabled={isConnecting}
         >
           <Send className="w-5 h-5" />
         </button>
