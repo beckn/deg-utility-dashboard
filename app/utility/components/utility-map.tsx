@@ -1,64 +1,103 @@
-"use client"
+"use client";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-import { BaseIconOptions, Icon } from "leaflet"
-import "leaflet/dist/leaflet.css"
-import type { AssetMarker, MeterWithTransformer, AssetType } from "../lib/types" // Changed FeederData to AssetMarker, added AssetType
-import { StatusBadge } from "./status-badge"
-import { Button } from "@/components/ui/button"
-import { GetCustomMapMarker } from "../lib/utils/custom-icon"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { BaseIconOptions, Icon } from "leaflet";
+import "leaflet/dist/leaflet.css";
+import type {
+  AssetMarker,
+  MeterWithTransformer,
+  AssetType,
+} from "../lib/types"; // Changed FeederData to AssetMarker, added AssetType
+import { StatusBadge } from "./status-badge";
+import { Button } from "@/components/ui/button";
+import { GetCustomMapMarker } from "../lib/utils/custom-icon";
 interface UtilityMapProps {
-  assets: AssetMarker[] // Changed feeders to assets
-  onSelectMeter?: (meter: MeterWithTransformer) => void
+  assets: AssetMarker[]; // Changed feeders to assets
+  onSelectMeter?: (meter: MeterWithTransformer) => void;
 }
 
-export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Changed feeders to assets
-  const createAssetIcon = (type: AssetType, status: "Critical" | "Warning" | "Normal" = "Normal") => {
-    let iconColor = "#2463EB" // Default blue (Normal)
-    let symbol = "❓"
+export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) {
+  // Changed feeders to assets
+  const createAssetIcon = (
+    type: AssetType,
+    status: "Critical" | "Warning" | "Normal" = "Normal"
+  ) => {
+    let iconColor = "#2463EB"; // Default blue (Normal)
+    let symbol = "❓";
 
-    if (status === "Critical") iconColor = "#ef4444" // Red
-    else if (status === "Warning") iconColor = "#f59e0b" // Yellow
+    if (status === "Critical") iconColor = "#ef4444"; // Red
+    else if (status === "Warning") iconColor = "#f59e0b"; // Yellow
 
     switch (type) {
       case "substation":
-        symbol = "⚡" // Lightning for substation
-        break
+        symbol = "⚡"; // Lightning for substation
+        break;
       case "transformer":
-        symbol = "T" // T for transformer
-        iconColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#3b82f6"; // Blue for normal transformer #2463EB
-        break
+        symbol = "T"; // T for transformer
+        iconColor =
+          status === "Critical"
+            ? "#ef4444"
+            : status === "Warning"
+            ? "#f59e0b"
+            : "#3b82f6"; // Blue for normal transformer #2463EB
+        break;
       case "household":
-        symbol = "🏠" // House for household
-        iconColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#2463EB"; // Green for normal household
-        break
+        symbol = "🏠"; // House for household
+        iconColor =
+          status === "Critical"
+            ? "#ef4444"
+            : status === "Warning"
+            ? "#f59e0b"
+            : "#2463EB"; // Green for normal household
+        break;
       default:
-        symbol = "📍" // Default pin
-        break
+        symbol = "📍"; // Default pin
+        break;
     }
 
-    const iconDetails = GetCustomMapMarker({type, color: iconColor})
-    return new Icon(iconDetails as BaseIconOptions)
-  }
+    const iconDetails = GetCustomMapMarker({ type, color: iconColor });
+    return new Icon(iconDetails as BaseIconOptions);
+  };
 
   const centerLat =
-    assets.length > 0 ? assets.reduce((sum, asset) => sum + asset.coordinates[0], 0) / assets.length : 37.4419
+    assets.length > 0
+      ? assets.reduce((sum, asset) => sum + asset.coordinates[0], 0) /
+        assets.length
+      : 37.4419;
 
   const centerLng =
-    assets.length > 0 ? assets.reduce((sum, asset) => sum + asset.coordinates[1], 0) / assets.length : -122.143
+    assets.length > 0
+      ? assets.reduce((sum, asset) => sum + asset.coordinates[1], 0) /
+        assets.length
+      : -122.143;
 
   return (
-    <MapContainer center={[centerLat, centerLng]} zoom={12} className="h-full w-full rounded-lg z-10">
+    <MapContainer
+      center={[centerLat, centerLng]}
+      zoom={12}
+      className="h-full w-full rounded-lg z-10"
+    >
       <TileLayer
         attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
 
       {assets.map((asset) => (
-        <Marker key={asset.id} position={asset.coordinates} icon={createAssetIcon(asset.type, asset.status)}>
+        <Marker
+          key={asset.id}
+          position={asset.coordinates}
+          icon={createAssetIcon(
+            asset.type === "transformer" && asset.emergencyService
+              ? "transformer_emergency_service"
+              : asset.type,
+            asset.status
+          )}
+        >
           <Popup>
             <div className="p-2 min-w-[200px]">
-              <h3 className="font-semibold text-gray-800 mb-1 text-base">{asset.name}</h3>
+              <h3 className="font-semibold text-gray-800 mb-1 text-base">
+                {asset.name}
+              </h3>
               <div className="space-y-0.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Type:</span>
@@ -70,11 +109,11 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Chan
                   <span className="text-gray-600">Status:</span>
                   <StatusBadge status={asset.status || "Normal"} size="sm" />
                 </div>
-                {asset.type === 'household' && asset.hasDers && (
-                   <div className="flex justify-between items-center">
-                     <span className="text-gray-600">DERs:</span>
-                     <span className="font-medium text-green-600">Active</span>
-                   </div>
+                {asset.type === "household" && asset.hasDers && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">DERs:</span>
+                    <span className="font-medium text-green-600">Active</span>
+                  </div>
                 )}
               </div>
 
@@ -106,5 +145,5 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) { // Chan
         </Marker>
       ))}
     </MapContainer>
-  )
+  );
 }

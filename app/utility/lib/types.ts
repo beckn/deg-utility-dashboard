@@ -38,6 +38,7 @@ export interface TransformerSummaryItem {
   metersCount: number
   maxCapacity: number
   margin: number
+  emergencyService?: boolean
 }
 
 export type MetricData = {
@@ -46,7 +47,7 @@ export type MetricData = {
   total: number
 }
 
-export type AssetType = "DER" | "household" | "substation" | "transformer" | "feeder"
+export type AssetType = "DER" | "household" | "substation" | "transformer" | "feeder" | "transformer_emergency_service"
 
 export type AssetMarker = {
   id: string
@@ -55,6 +56,7 @@ export type AssetMarker = {
   coordinates: [number, number]
   status?: "Critical" | "Warning" | "Normal"
   hasDers?: boolean // For filtering households with DERs
+  emergencyService?: boolean
 }
 
 // Strapi API Response Types
@@ -108,6 +110,7 @@ export interface StrapiTransformer {
   currentLoad?: number
   margin?: number
   meters: StrapiMeter[]
+  emergencyService?: boolean
 }
 
 export interface StrapiSubstation {
@@ -201,7 +204,7 @@ export type SubstationWithUtility = StrapiSubstation & {
 
 export type TransformerWithSubstation = StrapiTransformer & SubstationWithUtility;
 
-export type MeterWithTransformer = StrapiMeter & TransformerWithSubstation;
+export type MeterWithTransformer = StrapiMeter;
 
 export interface SimplifiedData {
   substations: SubstationWithUtility[];
