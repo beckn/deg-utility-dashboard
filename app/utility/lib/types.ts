@@ -138,7 +138,7 @@ export interface StrapiUtility {
 
 export interface StrapiApiRoot {
   utilities: StrapiUtility[]
-  auditTrail: StrapiAuditTrail[]
+  orders: StrapiAuditTrail[]
 }
 
 // Processed data types
@@ -216,8 +216,21 @@ export interface SimplifiedData {
 export interface StrapiAuditTrail {
   id: number;
   name: string;
-  meterId: string;
-  orderId: string;
+  meter_id: number | string;
+  order: {
+    id: number | string;
+  };
+  dfp_accepted: boolean;
+  current_consumption_kwh: number;
+  consumption_change_percentage: number;
+  up: boolean;
+}
+
+export interface SimplifiedAuditTrail {
+  id: number;
+  name: string;
+  meterId: number | string;
+  orderId: number | string;
   consumption: number;
   percent: number;
   up: boolean;

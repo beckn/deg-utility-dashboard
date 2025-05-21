@@ -1,4 +1,4 @@
-import type { StrapiApiRoot,  SimplifiedData,  SubstationWithUtility, TransformerWithSubstation, MeterWithTransformer } from "../types"
+import type { StrapiApiRoot,  SimplifiedData,  SubstationWithUtility, TransformerWithSubstation, MeterWithTransformer, StrapiAuditTrail, SimplifiedAuditTrail } from "../types"
 
 export const simplifyUtilData = (data: StrapiApiRoot): SimplifiedData => {
   const substations: SubstationWithUtility[] = [];
@@ -44,4 +44,17 @@ export const simplifyUtilDataForDashboard = (data: StrapiApiRoot) => {
   return data.utilities.flatMap((utility) =>
     utility.substations.flatMap((substation) => substation.transformers)
   )
+}
+
+export const simplifyAuditTrailData = (data: StrapiApiRoot): SimplifiedAuditTrail[] => {
+  return data.orders.map((item) => ({
+    id: item.id,
+    name: item.name || "",
+    meterId: item.meter_id,
+    orderId: item.order.id,
+    consumption: item.current_consumption_kwh,
+    percent: Math.abs(item.consumption_change_percentage),
+    up: item.consumption_change_percentage > 0,
+    accepted: item.dfp_accepted
+  }))
 }
