@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { useSimplifiedUtilDataStore } from "../lib/stores/utility-store";
 import { DashboardHeader } from "./dashboard-header";
@@ -42,6 +42,7 @@ export default function UtilityDashboard() {
   >("Normal");
   const [forceNormal, setForceNormal] = useState(false);
   const [selectedTab, setSelectedTab] = useState("All");
+  const agentRef = useRef<any>(null);
 
   // const { allAssets, systemMetrics, transformerSummaries } = useProcessedData();
 
@@ -166,9 +167,10 @@ export default function UtilityDashboard() {
       status: statusPhase,
       metersCount: 12,
       coordinates: [37.7599, -122.4148],
-      margin: -16.4,
+      margin: 100 - getDynamicLoad(statusPhase),
       region: "North",
       condition: "Critical",
+      capacity: 1000,
     },
     {
       id: "transformer_2",
@@ -180,9 +182,10 @@ export default function UtilityDashboard() {
       status: "Warning" as const,
       metersCount: 15,
       coordinates: [37.8037, -122.4368],
-      margin: -16.4,
+      margin: 100 - 88,
       region: "North",
       condition: "Normal",
+      capacity: 860,
     },
     {
       id: "transformer_3",
@@ -194,9 +197,10 @@ export default function UtilityDashboard() {
       status: "Warning" as const,
       metersCount: 8,
       coordinates: [37.7499, -122.4444],
-      margin: -16.4,
+      margin: 100 - 80,
       region: "North",
       condition: "Normal",
+      capacity: 430,
     },
     {
       id: "transformer_4",
@@ -208,9 +212,10 @@ export default function UtilityDashboard() {
       status: "Normal" as const,
       metersCount: 10,
       coordinates: [37.7534, -122.4944],
-      margin: -16.4,
+      margin: 100 - 60,
       region: "North",
       condition: "Normal",
+      capacity: 400,
     },
     {
       id: "transformer_5",
@@ -222,10 +227,11 @@ export default function UtilityDashboard() {
       status: "Normal" as const,
       metersCount: 14,
       coordinates: [37.7899, -122.4044],
-      margin: -16.4,
+      margin: 100 - 60,
       region: "West",
       warningLight: false,
       condition: "Normal",
+      capacity: 200,
     },
   ];
 
@@ -278,7 +284,7 @@ export default function UtilityDashboard() {
         <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
           <DashboardSidebar
             transformerSummaries={transformerSummaries}
-            onAuditTrailClick={() => setShowAuditTrailMessages(true)}
+            onAuditTrailClick={() => agentRef.current?.handleAuditTrailFlow()}
           />
         </div>
         {/* Center: Map and Metrics */}
@@ -345,13 +351,13 @@ export default function UtilityDashboard() {
         <div className="w-[400px] min-w-[320px] max-w-md flex-shrink-0 h-full bg-card rounded-lg shadow border border-border">
           <div className="h-full flex flex-col">
             <UtilityAgent
+              ref={agentRef}
               initialMessage={
                 criticalTransformer
                   ? `Alert: ${criticalTransformer.name} – Status: ${criticalTransformer.status}. Load: ${criticalTransformer.currentLoad}%. Meters: ${criticalTransformer.metersCount}`
                   : "All transformers normal."
               }
               onClose={() => {}}
-              showAuditTrailMessages={showAuditTrailMessages}
               onDDRComplete={() => setForceNormal(true)}
             />
           </div>

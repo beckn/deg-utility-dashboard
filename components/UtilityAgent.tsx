@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { Send, X, Minimize2, BarChart3 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -31,17 +31,39 @@ interface UtilityAgentProps {
 const conversationFlow = [
   {
     sender: "agent",
-    text: `⚠️ **Grid Stress Detected at Central Feeder Hub [TX005]** – Capacity Breach Likely in 25 Minutes.`,
+    text: `⚠️ **CRITICAL ALERT**: Feeder TX005 (Emergency P2) Approaching Overload (+160 kWh) in
+next 25 minutes.`,
   },
   {
     sender: "agent",
-    text: `Based on the current stress levels, here are the available Demand Flexibility Program (DFP) options:\n\n**Option 1:**\n
-Dynamic Demand Response (DDR) rewards participants who can rapidly shift or curtail electricity usage during frequent, short-notice events. Participants receive the moderately high per-event compensation due to their ability to reliably and promptly adjust energy consumption patterns, significantly aiding grid stability and renewable energy integration.\n\n- **Reward:** $3–4.5 per kWh shifted  \n- **Bonus:** 15% extra if >90% compliance monthly  \n- **Penalty:** 15% reduction in incentives if compliance <75%  \n- **Category:** Residential  \n- **Minimum Load:** 5 kW  \n\n---\n\n**Option 2:**\n
-Emergency Demand Reduction (EDR) is designed for consumers who can rapidly curtail significant energy use during critical, rare grid emergencies. These are infrequent but urgent events requiring immediate action. Participants are compensated significantly for availability but face substantial penalties for non-compliance due to critical grid dependence.\n\n- **Reward:** $250/year per kW available  \n- **Bonus:** $10.00 per kWh curtailed during events  \n- **Penalty:** 50% annual availability fee reduction per missed event  \n- **Category:** Residential  \n- **Minimum Load:** 5 kW`,
+    text: `Based on real-time aggregated capacities and historical response analytics, here are the available Grid Flexibility Programs: 
+
+**📗 Program 1: Dynamic Demand Response**  
+- Aggregated Capacity Available: 350 kW  
+- Asset Types: Residential (45%), Commercial and industrial (55%)  
+- Historical Response Rate: 89% compliance (last 6 months)  
+- Average Response Latency: 3.2 minutes  
+- Historical Reward: $4.00 per kWh shifted  
+- Bonus: 15% extra if monthly compliance >90%  
+- Penalty: 15% reduction if compliance <75%  
+- Category: Residential
+
+**📕 Program 2: Emergency Demand Reduction (EDR)**  
+- Aggregated Capacity Available: 220 kW  
+- Asset Types: Residential Battery Storage (60%), EV Fleet Hubs (40%)  
+- Historical Response Rate: 98% compliance (last 12 months, rare events)  
+- Average Response Latency: 20 seconds  
+- Availability Reward: $250/year per kW available  
+- Event Reward: $10.00 per kWh curtailed  
+- Penalty: 50% annual fee reduction per missed event  
+- Category: Residential  
+- Minimum Meter Capacity: 5 kW`
   },
   {
     sender: "agent",
-    text: `🔎 **I recommend Option 1 – Dynamic Demand Response (DDR)** for immediate grid relief.  \nWould you like to proceed?`,
+    text: `🔍 Recommendation: To achieve immediate grid relief with minimal disruption and high
+historical reliability, I recommend activating Program 1 – Dynamic Demand Response.\n
+\nWould you like to proceed?`,
   },
   {
     sender: "user",
@@ -49,15 +71,35 @@ Emergency Demand Reduction (EDR) is designed for consumers who can rapidly curta
   },
   {
     sender: "agent",
-    text: `✅ **Proceeding to Activate Demand Flexibility Option 1 – Dynamic Demand Response (DDR)**. Please wait…`,
+    text: `Activating Program 1 – **Dynamic Demand Response (DDR).**
+
+Broadcasting flexibility requests to eligible meters. Please wait..`,
   },
   {
     sender: "agent",
-    text: `✅ 47 DER-enabled households have participated in DDR.`,
+    text: `**📊 Live Response Tracking**  
+    **Response Status (Number of Meters):**
+    
+    - ✅ Accepted: 38  
+    - ⏳ Pending: 5  
+    - ❌ Declined: 4  
+      - AQI Limits: 2  
+      - Unresponsive: 1  
+      - Consent Expired: 1`
   },
   {
     sender: "agent",
-    text: `✅ Central Feeder Hub [TX005] load is now back to normal.`,
+    text: `✅ Final Response Summary  
+
+    - **Accepted**: 38 meters  
+    - **Declined**: 4 meters  
+    - **Pending (No Response)**: 5 meters (treated as declined)  
+    **Effective Capacity Activated**: 310 kW (**89%** of DDR capacity)`
+  },
+  {
+    sender: "agent",
+    text: `✅ Emergency P2 Feeder Hub [TX005] load normalized. Grid returning to optimal conditions in
+approximately 10 minutes'`,
   },
 ];
 
@@ -154,12 +196,12 @@ function autoFormatSummaryToMarkdown(plainText: string) {
   return text;
 }
 
-const UtilityAgent: React.FC<UtilityAgentProps> = ({
+const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(({
   onClose,
   initialMessage,
   showAuditTrailMessages = false,
   onDDRComplete,
-}) => {
+}, ref) => {
   const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -174,25 +216,31 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
   useEffect(() => {
     if (step < 3) {
       // Delay showing typing animation until 55 seconds
-      const typingTimer = setTimeout(() => {
-        setIsAgentTyping(true);
-      }, step === 0 ? 55000 : 0);
+      const typingTimer = setTimeout(
+        () => {
+          setIsAgentTyping(true);
+        },
+        step === 0 ? 55000 : 0
+      );
 
-      const messageTimer = setTimeout(() => {
-        setIsAgentTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString() + step,
-            text: conversationFlow[step].text,
-            isUser: false,
-            timestamp: new Date(),
-            type: "agent",
-          },
-        ]);
-        setStep((prev) => prev + 1);
-        if (step === 2) setInputEnabled(true);
-      }, step === 0 ? 50000 : 10000); // 58 seconds for first message, 10 seconds for second
+      const messageTimer = setTimeout(
+        () => {
+          setIsAgentTyping(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString() + step,
+              text: conversationFlow[step].text,
+              isUser: false,
+              timestamp: new Date(),
+              type: "agent",
+            },
+          ]);
+          setStep((prev) => prev + 1);
+          if (step === 2) setInputEnabled(true);
+        },
+        step === 0 ? 50000 : 10000
+      ); // 58 seconds for first message, 10 seconds for second
 
       return () => {
         clearTimeout(typingTimer);
@@ -364,6 +412,60 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
     );
   };
 
+  const handleAuditTrailFlow = () => {
+    // Show Live Response Tracking immediately
+    setIsAgentTyping(true);
+    setTimeout(() => {
+      setIsAgentTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString() + "audit1",
+          text: `**📊 Live Response Tracking**\nResponse Status (Number of Meters):\n\n✅ Accepted: 38\n⏳ Pending: 5\n❌ Declined: 4\nAQI Limits (2)\nUnresponsive (1)\nConsent Expired (1)`,
+          isUser: false,
+          timestamp: new Date(),
+          type: "agent",
+        },
+      ]);
+      // Wait 30 seconds before showing the next message
+      setTimeout(() => {
+        setIsAgentTyping(true);
+        setTimeout(() => {
+          setIsAgentTyping(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString() + "audit2",
+              text: `✅ Final Response Summary\n\n- **Accepted**: 38 meters  \n- **Declined**: 4 meters  \n- **Pending (No Response)**: 5 meters (treated as declined)  \n- **Effective Capacity Activated**: 310 kW (**89%** of DDR capacity)`,
+              isUser: false,
+              timestamp: new Date(),
+              type: "agent",
+            },
+          ]);
+          // After a short delay, show the last message
+          setIsAgentTyping(true);
+          setTimeout(() => {
+            setIsAgentTyping(false);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString() + "audit3",
+                text: `✅ Emergency P2 Feeder Hub [TX005] load normalized. Grid returning to optimal conditions in approximately 10 minutes'`,
+                isUser: false,
+                timestamp: new Date(),
+                type: "agent",
+              },
+            ]);
+          }, 1200); // 1.2s delay for last message
+        }, 1200); // 1.2s typing for summary
+      }, 30000); // 30s delay after audit trail message
+    }, 1200); // 1.2s typing for audit trail
+  };
+
+  useImperativeHandle(ref, () => ({
+    handleAuditTrailFlow,
+  }));
+
   return (
     <div className="flex flex-col h-full w-full bg-card text-foreground rounded-lg border border-border">
       {/* Header */}
@@ -501,6 +603,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default UtilityAgent;
+

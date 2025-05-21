@@ -9,7 +9,7 @@ const AUDIT_DATA = [
     orderId: "ABC123",
     consumption: 100,
     percent: 10,
-    accepted: true
+    accepted: true,
   },
   {
     id: 6,
@@ -18,7 +18,7 @@ const AUDIT_DATA = [
     orderId: "XYZ789",
     consumption: 120,
     percent: 15,
-    accepted: true
+    accepted: true,
   },
   {
     id: 7,
@@ -27,7 +27,7 @@ const AUDIT_DATA = [
     orderId: "LMN456",
     consumption: 90,
     percent: 12,
-    accepted: true
+    accepted: true,
   },
   {
     id: 8,
@@ -36,7 +36,7 @@ const AUDIT_DATA = [
     orderId: "QRS234",
     consumption: 80,
     percent: 11,
-    accepted: true
+    accepted: true,
   },
   {
     id: 4,
@@ -45,15 +45,58 @@ const AUDIT_DATA = [
     orderId: "ABC123",
     consumption: 100,
     percent: -10,
-    accepted: false
-  }
+    accepted: false,
+  },
 ];
-
 
 function getStatus(load: number) {
   if (load >= 90) return "Critical";
   if (load < 80) return load < 70 ? "Normal" : "Warning";
   return "Warning";
+}
+
+function getStatusColorBlend(load: number) {
+  // Green: #4F9835, Yellow: #D8A603, Red: #983535
+  if (load < 70) {
+    // Normal (green)
+    return 'rgb(79,152,53)';
+  } else if (load < 80) {
+    // Blend green to yellow between 70 and 80
+    const percent = (load - 70) / 10;
+    const r = Math.round(79 + percent * (216 - 79));
+    const g = Math.round(152 + percent * (166 - 152));
+    const b = Math.round(53 + percent * (3 - 53));
+    return `#D8A603`;
+  } else if (load < 90) {
+    // Blend yellow to red between 80 and 90
+    const percent = (load - 80) / 10;
+    const r = Math.round(216 + percent * (152 - 216));
+    const g = Math.round(166 + percent * (53 - 166));
+    const b = Math.round(3 + percent * (53 - 3));
+    return `#D8A603`;
+  } else {
+    // Critical (red)
+    return 'rgb(152,53,53)';
+  }
+}
+
+function AnimatedLoadBar({ load }: { load: number }) {
+  const [progress, setProgress] = React.useState(0);
+  React.useEffect(() => {
+    const timeout = setTimeout(() => setProgress(Math.min(load, 100)), 100);
+    return () => clearTimeout(timeout);
+  }, [load]);
+  const color = getStatusColorBlend(load);
+  return (
+    <div
+      className="h-full rounded-full"
+      style={{
+        width: `${progress}%`,
+        background: color,
+        transition: 'width 4s cubic-bezier(0.4,0,0.2,1), background 2s',
+      }}
+    />
+  );
 }
 
 interface FeederAuditTabsProps {
@@ -147,24 +190,12 @@ export function FeederAuditTabs({
                   </div>
                   <div className="flex items-center gap-2 mb-1">
                     <div className="flex-1 h-1.5 rounded-full bg-[#3A4256] overflow-hidden">
-                      <div
-                        className={
-                          getStatus(item.load) === "Critical"
-                            ? "bg-[#983535]"
-                            : getStatus(item.load) === "Warning"
-                            ? "bg-[#D8A603]"
-                            : "bg-[#4F9835]"
-                        }
-                        style={{
-                          width: `${Math.min(item.load, 100)}%`,
-                          height: "100%",
-                        }}
-                      />
+                      <AnimatedLoadBar load={item.load} />
                     </div>
                   </div>
                   <div className="flex justify-between text-xs text-[#B0B6C3]">
                     <span>{item.load}%</span>
-                    <span>{item.capacity} 100 kW</span>
+                    <span>{item.capacity} kW</span>
                   </div>
                 </div>
                 {idx !== feeders.length - 1 && (
@@ -181,8 +212,8 @@ export function FeederAuditTabs({
                 className="bg-[#23243A] rounded-lg p-4 shadow border border-[#23243A] animate-fade-in"
                 style={{
                   opacity: 0,
-                  animation: 'fadeInUp 0.5s ease forwards',
-                  animationDelay: '0ms',
+                  animation: "fadeInUp 0.5s ease forwards",
+                  animationDelay: "0ms",
                 }}
               >
                 <div className="font-semibold text-white text-base underline mb-1">
