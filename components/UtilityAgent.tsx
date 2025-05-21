@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Send, X, Minimize2, BarChart3 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -32,7 +38,7 @@ interface UtilityAgentProps {
 const conversationFlow = [
   {
     sender: "agent",
-    text: `⚠️ **CRITICAL ALERT**: Feeder TX005 (Emergency P2) Approaching Overload (+160 kWh) in
+    text: `⚠️ **CRITICAL ALERT**: Central Feeder Hub TX005 (Emergency Services P2) Approaching Overload (+160 kWh) in
 next 25 minutes.`,
   },
   {
@@ -82,12 +88,14 @@ Broadcasting flexibility requests to eligible meters \n
     sender: "agent",
     text: `**📊 Live Response Tracking**
     **Response Status (Number of Meters):**
+
     - ✅ Accepted:38
+   
     - ⏳ Pending:5
     - ❌ Declined:4
-    - AQI Limits:2
+    - [AQI Limits:2
     - Unresponsive:1
-    - Consent Expired:1`,
+    - Consent Expired:1]`,
   },
   {
     sender: "agent",
@@ -99,8 +107,7 @@ Effective Capacity Activated: 310 kW (89% of DDR capacity)`,
   },
   {
     sender: "agent",
-    text: `✅ Emergency P2 Feeder Hub [TX005] load normalized. Grid returning to optimal conditions in
-approximately 10 minutes'`,
+    text: `✅Emergency Services P2- Central Feeder Hub [TX005] load normalized. Grid returning to optimal conditions in approximately 10 minutes'`,
   },
 ];
 
@@ -197,440 +204,461 @@ function autoFormatSummaryToMarkdown(plainText: string) {
   return text;
 }
 
-const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(({
-  onClose,
-  initialMessage,
-  showAuditTrailMessages = false,
-  onDDRComplete,
-  onGridNormalized,
-}, ref) => {
-  const [step, setStep] = useState(0);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [isAgentTyping, setIsAgentTyping] = useState(false);
-  const [inputEnabled, setInputEnabled] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [normalizationProgress, setNormalizationProgress] = useState(0);
+const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(
+  (
+    {
+      onClose,
+      initialMessage,
+      showAuditTrailMessages = false,
+      onDDRComplete,
+      onGridNormalized,
+    },
+    ref
+  ) => {
+    const [step, setStep] = useState(0);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [inputText, setInputText] = useState("");
+    const [isAgentTyping, setIsAgentTyping] = useState(false);
+    const [inputEnabled, setInputEnabled] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [normalizationProgress, setNormalizationProgress] = useState(0);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
-  useEffect(() => {
-    if (step < 3) {
-      // Delay showing typing animation until 55 seconds
-      const typingTimer = setTimeout(
-        () => {
-          setIsAgentTyping(true);
-        },
-        step === 0 ? 55000 : 0
-      );
-
-      const messageTimer = setTimeout(
-        () => {
-          setIsAgentTyping(false);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString() + step,
-              text: conversationFlow[step].text,
-              isUser: false,
-              timestamp: new Date(),
-              type: "agent",
-            },
-          ]);
-          setStep((prev) => prev + 1);
-          if (step === 2) setInputEnabled(true);
-        },
-        step === 0 ? 15000 : 3000
-      ); // 58 seconds for first message, 10 seconds for second
-
-      return () => {
-        clearTimeout(typingTimer);
-        clearTimeout(messageTimer);
-      };
-    }
-  }, [step]);
-
-  useEffect(() => {
-    // Only trigger if the last message is the 'Proceeding...' message and the DDR participation message is not yet shown
-    const proceedingText =
-      "✅ **Proceeding to Activate Demand Flexibility Option 1 – Dynamic Demand Response (DDR)**. Please wait…";
-    const ddrParticipationText = conversationFlow[5].text;
-    const loadNormalText = conversationFlow[6].text;
-
-    const lastMsgIsProceeding =
-      messages.length > 0 &&
-      messages[messages.length - 1].text === proceedingText;
-    const hasDDRParticipation = messages.some(
-      (m) => m.text === ddrParticipationText
-    );
-    const hasLoadNormal = messages.some((m) => m.text === loadNormalText);
-
-    if (
-      showAuditTrailMessages &&
-      lastMsgIsProceeding &&
-      !hasDDRParticipation &&
-      !hasLoadNormal
-    ) {
-      setIsAgentTyping(true);
-      const timer1 = setTimeout(() => {
-        setIsAgentTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString() + "6",
-            text: ddrParticipationText,
-            isUser: false,
-            timestamp: new Date(),
-            type: "agent",
+    useEffect(() => {
+      if (step < 3) {
+        // Delay showing typing animation until 55 seconds
+        const typingTimer = setTimeout(
+          () => {
+            setIsAgentTyping(true);
           },
-        ]);
-        setStep(6);
-        // Call onDDRComplete when DDR participation message is shown
-        if (typeof onDDRComplete === "function") {
-          onDDRComplete();
-        }
-        setTimeout(() => {
-          setIsAgentTyping(true);
-          setTimeout(() => {
+          step === 0 ? 55000 : 0
+        );
+
+        const messageTimer = setTimeout(
+          () => {
             setIsAgentTyping(false);
             setMessages((prev) => [
               ...prev,
               {
-                id: Date.now().toString() + "7",
-                text: loadNormalText,
+                id: Date.now().toString() + step,
+                text: conversationFlow[step].text,
                 isUser: false,
                 timestamp: new Date(),
                 type: "agent",
               },
             ]);
-            setStep(7);
-          }, 1200); // Typing animation for second message
-        }, 2000); // Wait 2 seconds before showing the second message
-      }, 1200); // Typing animation for first message
-      return () => {
-        setIsAgentTyping(false);
-      };
-    }
-  }, [showAuditTrailMessages, messages, onDDRComplete]);
-
-  useEffect(() => {
-    // Check if the last message is about grid normalization
-    const lastMessage = messages[messages.length - 1];
-    if (
-      lastMessage &&
-      lastMessage.text.includes("Grid returning to optimal conditions")
-    ) {
-      // Start progress animation
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 1;
-        setNormalizationProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-        }
-      }, 600); // 600ms per 1% = 60 seconds total for 100%
-      // Call onGridNormalized if provided
-      if (typeof onGridNormalized === "function") {
-        onGridNormalized();
-      }
-      return () => clearInterval(interval);
-    }
-  }, [messages, onGridNormalized]);
-
-  const handleSendMessage = () => {
-    if (!inputText.trim() || !inputEnabled) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        text: inputText,
-        isUser: true,
-        timestamp: new Date(),
-        type: "user",
-      },
-    ]);
-    setInputText("");
-    setInputEnabled(false);
-
-    let nextStep = step + 1;
-    while (
-      nextStep < conversationFlow.length &&
-      conversationFlow[nextStep].sender !== "agent"
-    ) {
-      nextStep++;
-    }
-    if (nextStep < conversationFlow.length) {
-      setIsAgentTyping(true);
-      setTimeout(() => {
-        setIsAgentTyping(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString() + nextStep,
-            text: conversationFlow[nextStep].text,
-            isUser: false,
-            timestamp: new Date(),
-            type: "agent",
+            setStep((prev) => prev + 1);
+            if (step === 2) setInputEnabled(true);
           },
-        ]);
-        setStep(nextStep);
-        setInputEnabled(true);
-      }, 1200);
-    }
-  };
+          step === 0 ? 15000 : 3000
+        ); // 58 seconds for first message, 10 seconds for second
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+        return () => {
+          clearTimeout(typingTimer);
+          clearTimeout(messageTimer);
+        };
+      }
+    }, [step]);
 
-  const renderChart = (chart: ChartData) => {
-    return (
-      <div key={chart.id} className="bg-white p-3 rounded-lg shadow-sm w-32">
-        <h4 className="text-xs font-medium text-gray-600 mb-2">
-          {chart.title}
-        </h4>
-        <div className="relative w-20 h-20 mx-auto mb-2">
-          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="35"
-              stroke="#e5e7eb"
-              strokeWidth="6"
-              fill="none"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="35"
-              stroke={chart.color}
-              strokeWidth="6"
-              fill="none"
-              strokeDasharray={`${chart.value * 2.2} 220`}
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-lg font-bold text-gray-800">
-              {chart.value}%
-            </span>
-          </div>
-        </div>
-        <div className="space-y-1 text-xs">
-          {chart.data.map((item) => (
-            <div key={item.name} className="flex justify-between">
-              <div className="flex items-center space-x-1">
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-gray-600">{item.name}</span>
-              </div>
-              <span className="font-medium">{item.value}K</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+    useEffect(() => {
+      // Only trigger if the last message is the 'Proceeding...' message and the DDR participation message is not yet shown
+      const proceedingText =
+        "✅ **Proceeding to Activate Demand Flexibility Option 1 – Dynamic Demand Response (DDR)**. Please wait…";
+      const ddrParticipationText = conversationFlow[5].text;
+      const loadNormalText = conversationFlow[6].text;
 
-  const handleAuditTrailFlow = () => {
-    // Show Live Response Tracking immediately
-    setIsAgentTyping(true);
-    setTimeout(() => {
-      setIsAgentTyping(false);
+      const lastMsgIsProceeding =
+        messages.length > 0 &&
+        messages[messages.length - 1].text === proceedingText;
+      const hasDDRParticipation = messages.some(
+        (m) => m.text === ddrParticipationText
+      );
+      const hasLoadNormal = messages.some((m) => m.text === loadNormalText);
+
+      if (
+        showAuditTrailMessages &&
+        lastMsgIsProceeding &&
+        !hasDDRParticipation &&
+        !hasLoadNormal
+      ) {
+        setIsAgentTyping(true);
+        const timer1 = setTimeout(() => {
+          setIsAgentTyping(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString() + "6",
+              text: ddrParticipationText,
+              isUser: false,
+              timestamp: new Date(),
+              type: "agent",
+            },
+          ]);
+          setStep(6);
+          // Call onDDRComplete when DDR participation message is shown
+          if (typeof onDDRComplete === "function") {
+            onDDRComplete();
+          }
+          setTimeout(() => {
+            setIsAgentTyping(true);
+            setTimeout(() => {
+              setIsAgentTyping(false);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString() + "7",
+                  text: loadNormalText,
+                  isUser: false,
+                  timestamp: new Date(),
+                  type: "agent",
+                },
+              ]);
+              setStep(7);
+            }, 1200); // Typing animation for second message
+          }, 2000); // Wait 2 seconds before showing the second message
+        }, 1200); // Typing animation for first message
+        return () => {
+          setIsAgentTyping(false);
+        };
+      }
+    }, [showAuditTrailMessages, messages, onDDRComplete]);
+
+    useEffect(() => {
+      // Check if the last message is about grid normalization
+      const lastMessage = messages[messages.length - 1];
+      if (
+        lastMessage &&
+        lastMessage.text.includes("Grid returning to optimal conditions")
+      ) {
+        // Start progress animation
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 1;
+          setNormalizationProgress(progress);
+          if (progress >= 100) {
+            clearInterval(interval);
+          }
+        }, 600); // 600ms per 1% = 60 seconds total for 100%
+        // Call onGridNormalized if provided
+        if (typeof onGridNormalized === "function") {
+          onGridNormalized();
+        }
+        return () => clearInterval(interval);
+      }
+    }, [messages, onGridNormalized]);
+
+    const handleSendMessage = () => {
+      if (!inputText.trim() || !inputEnabled) return;
       setMessages((prev) => [
         ...prev,
         {
-          id: Date.now().toString() + "audit1",
-          text: `**📊 Live Response Tracking**\nResponse Status (Number of Meters):\n\n✅ Accepted: 38\n⏳ Pending: 5\n❌ Declined: 4\nAQI Limits (2)\nUnresponsive (1)\nConsent Expired (1)`,
-          isUser: false,
+          id: Date.now().toString(),
+          text: inputText,
+          isUser: true,
           timestamp: new Date(),
-          type: "agent",
+          type: "user",
         },
       ]);
-      // Wait 30 seconds before showing the next message
-      setTimeout(() => {
+      setInputText("");
+      setInputEnabled(false);
+
+      let nextStep = step + 1;
+      while (
+        nextStep < conversationFlow.length &&
+        conversationFlow[nextStep].sender !== "agent"
+      ) {
+        nextStep++;
+      }
+      if (nextStep < conversationFlow.length) {
         setIsAgentTyping(true);
         setTimeout(() => {
           setIsAgentTyping(false);
           setMessages((prev) => [
             ...prev,
             {
-              id: Date.now().toString() + "audit2",
-              text: `✅ Final Response Summary\n\n- **Accepted**: 38 meters  \n- **Declined**: 4 meters  \n- **Pending (No Response)**: 5 meters (treated as declined)  \n- **Effective Capacity Activated**: 310 kW (**89%** of DDR capacity)`,
+              id: Date.now().toString() + nextStep,
+              text: conversationFlow[nextStep].text,
               isUser: false,
               timestamp: new Date(),
               type: "agent",
             },
           ]);
-          // After a short delay, show the last message
+          setStep(nextStep);
+          setInputEnabled(true);
+        }, 1200);
+      }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    };
+
+    const renderChart = (chart: ChartData) => {
+      return (
+        <div key={chart.id} className="bg-white p-3 rounded-lg shadow-sm w-32">
+          <h4 className="text-xs font-medium text-gray-600 mb-2">
+            {chart.title}
+          </h4>
+          <div className="relative w-20 h-20 mx-auto mb-2">
+            <svg
+              className="w-20 h-20 transform -rotate-90"
+              viewBox="0 0 100 100"
+            >
+              <circle
+                cx="50"
+                cy="50"
+                r="35"
+                stroke="#e5e7eb"
+                strokeWidth="6"
+                fill="none"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="35"
+                stroke={chart.color}
+                strokeWidth="6"
+                fill="none"
+                strokeDasharray={`${chart.value * 2.2} 220`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-lg font-bold text-gray-800">
+                {chart.value}%
+              </span>
+            </div>
+          </div>
+          <div className="space-y-1 text-xs">
+            {chart.data.map((item) => (
+              <div key={item.name} className="flex justify-between">
+                <div className="flex items-center space-x-1">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  ></div>
+                  <span className="text-gray-600">{item.name}</span>
+                </div>
+                <span className="font-medium">{item.value}K</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const handleAuditTrailFlow = () => {
+      // Show Live Response Tracking immediately
+      setIsAgentTyping(true);
+      setTimeout(() => {
+        setIsAgentTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString() + "audit1",
+            text: `**📊 Live Response Tracking**
+            Response Status (Number of Meters):
+            ✅ Accepted: 38  
+            ⏳ Pending: 5  
+            ❌ Declined: 4  
+            [AQI Limits (2)  
+            Unresponsive (1)  
+            Consent Expired (1)]`,
+
+            isUser: false,
+            timestamp: new Date(),
+            type: "agent",
+          },
+        ]);
+        // Wait 30 seconds before showing the next message
+        setTimeout(() => {
           setIsAgentTyping(true);
           setTimeout(() => {
             setIsAgentTyping(false);
             setMessages((prev) => [
               ...prev,
               {
-                id: Date.now().toString() + "audit3",
-                text: `✅ Emergency P2 Feeder Hub [TX005] load normalized. Grid returning to optimal conditions in approximately 10 minutes'`,
+                id: Date.now().toString() + "audit2",
+                text: `✅ Final Response Summary\n\n- **Accepted**: 38 meters  \n- **Declined**: 4 meters  \n- **Pending (No Response)**: 5 meters (treated as declined)  \n- **Effective Capacity Activated**: 310 kW (**89%** of DDR capacity)`,
                 isUser: false,
                 timestamp: new Date(),
                 type: "agent",
               },
             ]);
-          }, 1200); // 1.2s delay for last message
-        }, 1200); // 1.2s typing for summary
-      }, 30000); // 30s delay after audit trail message
-    }, 1200); // 1.2s typing for audit trail
-  };
+            // After a short delay, show the last message
+            setIsAgentTyping(true);
+            setTimeout(() => {
+              setIsAgentTyping(false);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString() + "audit3",
+                  text: `✅ Emergency Services P2- Central Feeder Hub [TX005] load normalized. Grid returning to optimal conditions in approximately 10 minutes'`,
+                  isUser: false,
+                  timestamp: new Date(),
+                  type: "agent",
+                },
+              ]);
+            }, 1200); // 1.2s delay for last message
+          }, 1200); // 1.2s typing for summary
+        }, 30000); // 30s delay after audit trail message
+      }, 1200); // 1.2s typing for audit trail
+    };
 
-  useImperativeHandle(ref, () => ({
-    handleAuditTrailFlow,
-  }));
+    useImperativeHandle(ref, () => ({
+      handleAuditTrailFlow,
+    }));
 
-  return (
-    <div className="flex flex-col h-full w-full bg-card text-foreground rounded-lg border border-border">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3 w-full justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-base font-bold text-primary-foreground">
-                AI
-              </span>
-            </div>
-            <span className="text-lg font-semibold">Agent Chat</span>
-          </div>
-          <span className="ml-3 text-xs text-green-400 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>{" "}
-            Online
-          </span>
-        </div>
-      </div>
-      {/* Messages */}
-      <div
-        className="flex-1 px-6 py-4 overflow-y-auto flex flex-col-reverse gap-4 bg-card"
-        style={{ minHeight: 0 }}
-      >
-        {[...messages].reverse().map((message, idx) => {
-          const isFirstGridAgentMsg =
-            messages.length - idx - 1 === 0 && !message.isUser;
-          return (
-            <div
-              key={message.id}
-              className={`flex flex-col ${
-                message.isUser ? "items-end" : "items-start"
-              } animate-slide-in-up`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`text-xs font-semibold ${
-                    message.isUser ? "text-green-400" : "text-blue-300"
-                  }`}
-                >
-                  {message.isUser ? "Operator" : "Grid Agent"}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+    return (
+      <div className="flex flex-col h-full w-full bg-card text-foreground rounded-lg border border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-3 w-full justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-base font-bold text-primary-foreground">
+                  AI
                 </span>
               </div>
-              <div
-                className={
-                  message.isUser
-                    ? "inline-block rounded-xl bg-[#2463EB] text-white px-4 py-2 max-w-[70%] ml-auto mb-2"
-                    : "rounded-2xl bg-[#334155] px-6 py-4 max-w-[90%] mb-4"
-                }
-              >
-                <ReactMarkdown
-                  components={{
-                    h2: ({ node, ...props }) => (
-                      <h2
-                        className="text-xl font-bold text-white mb-1"
-                        {...props}
-                      />
-                    ),
-                    strong: ({ node, ...props }) => (
-                      <strong className="font-bold text-white" {...props} />
-                    ),
-                    p: ({ node, ...props }) => (
-                      <p className="text-base text-gray-300 mb-1" {...props} />
-                    ),
-                    li: ({ node, ...props }) => (
-                      <li className="ml-4 list-disc text-gray-300" {...props} />
-                    ),
-                  }}
-                >
-                  {message.isUser
-                    ? message.text
-                    : message.text.startsWith("Mitigation Options")
-                    ? mitigationOptionsToMarkdown(message.text)
-                    : message.text.startsWith("Feeder status summary")
-                    ? feederSummaryToMarkdown(message.text)
-                    : autoFormatSummaryToMarkdown(message.text)}
-                </ReactMarkdown>
-                {"charts" in message &&
-                  Array.isArray((message as any).charts) &&
-                  (message as any).charts.length > 0 && (
-                    <div className="mt-3 flex space-x-3 overflow-x-auto">
-                      {(message as any).charts.map(renderChart)}
-                    </div>
-                  )}
-              </div>
+              <span className="text-lg font-semibold">Agent Chat</span>
             </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
-      {isAgentTyping && (
-        <div className="w-full flex justify-start mb-4 ml-6">
-          <div className="px-4 py-4 bg-[#334155] rounded-md flex items-center">
-            <span className="flex gap-1">
-              <span
-                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                style={{ animationDelay: "0ms" }}
-              ></span>
-              <span
-                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                style={{ animationDelay: "150ms" }}
-              ></span>
-              <span
-                className="w-2 h-2 bg-white rounded-full animate-bounce"
-                style={{ animationDelay: "300ms" }}
-              ></span>
+            <span className="ml-3 text-xs text-green-400 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>{" "}
+              Online
             </span>
           </div>
         </div>
-      )}
-      {/* Input */}
-      <div className="p-3 border-t border-border flex items-center gap-2 ">
-        <input
-          type="text"
-          className="flex-1 rounded-lg px-3 py-2 bg-[#475569] border border-border focus:outline-none focus:ring-2 focus:ring-primary"
-          placeholder="Type a Message"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          onKeyDown={handleKeyPress}
-          disabled={!inputEnabled}
-        />
-        <button
-          onClick={handleSendMessage}
-          className="w-10 h-10 bg-[#224694] rounded-sm flex items-center justify-center hover:bg-[#1b356b] transition"
-          disabled={!inputEnabled}
+        {/* Messages */}
+        <div
+          className="flex-1 px-6 py-4 overflow-y-auto flex flex-col-reverse gap-4 bg-card"
+          style={{ minHeight: 0 }}
         >
-          <Send className="text-white rotate-40" />
-        </button>
+          {[...messages].reverse().map((message, idx) => {
+            const isFirstGridAgentMsg =
+              messages.length - idx - 1 === 0 && !message.isUser;
+            return (
+              <div
+                key={message.id}
+                className={`flex flex-col ${
+                  message.isUser ? "items-end" : "items-start"
+                } animate-slide-in-up`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className={`text-xs font-semibold ${
+                      message.isUser ? "text-green-400" : "text-blue-300"
+                    }`}
+                  >
+                    {message.isUser ? "Operator" : "Grid Agent"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <div
+                  className={
+                    message.isUser
+                      ? "inline-block rounded-xl bg-[#2463EB] text-white px-4 py-2 max-w-[70%] ml-auto mb-2"
+                      : "rounded-2xl bg-[#334155] px-6 py-4 max-w-[90%] mb-4"
+                  }
+                >
+                  <ReactMarkdown
+                    components={{
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          className="text-xl font-bold text-white mb-1"
+                          {...props}
+                        />
+                      ),
+                      strong: ({ node, ...props }) => (
+                        <strong className="font-bold text-white" {...props} />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="text-base text-gray-300 mb-1"
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li
+                          className="ml-4 list-disc text-gray-300"
+                          {...props}
+                        />
+                      ),
+                    }}
+                  >
+                    {message.isUser
+                      ? message.text
+                      : message.text.startsWith("Mitigation Options")
+                      ? mitigationOptionsToMarkdown(message.text)
+                      : message.text.startsWith("Feeder status summary")
+                      ? feederSummaryToMarkdown(message.text)
+                      : autoFormatSummaryToMarkdown(message.text)}
+                  </ReactMarkdown>
+                  {"charts" in message &&
+                    Array.isArray((message as any).charts) &&
+                    (message as any).charts.length > 0 && (
+                      <div className="mt-3 flex space-x-3 overflow-x-auto">
+                        {(message as any).charts.map(renderChart)}
+                      </div>
+                    )}
+                </div>
+              </div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+        {isAgentTyping && (
+          <div className="w-full flex justify-start mb-4 ml-6">
+            <div className="px-4 py-4 bg-[#334155] rounded-md flex items-center">
+              <span className="flex gap-1">
+                <span
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></span>
+                <span
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></span>
+                <span
+                  className="w-2 h-2 bg-white rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></span>
+              </span>
+            </div>
+          </div>
+        )}
+        {/* Input */}
+        <div className="p-3 border-t border-border flex items-center gap-2 ">
+          <input
+            type="text"
+            className="flex-1 rounded-lg px-3 py-2 bg-[#475569] border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Type a Message"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyPress}
+            disabled={!inputEnabled}
+          />
+          <button
+            onClick={handleSendMessage}
+            className="w-10 h-10 bg-[#224694] rounded-sm flex items-center justify-center hover:bg-[#1b356b] transition"
+            disabled={!inputEnabled}
+          >
+            <Send className="text-white rotate-40" />
+          </button>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 export default UtilityAgent;
-

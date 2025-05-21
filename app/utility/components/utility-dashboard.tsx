@@ -42,6 +42,12 @@ export default function UtilityDashboard() {
   >("Normal");
   const [forceNormal, setForceNormal] = useState(false);
   const [selectedTab, setSelectedTab] = useState("All");
+  const [dynamicLoads, setDynamicLoads] = useState<{ [key: string]: number }>({
+    transformer_2: 80,
+    transformer_3: 82,
+    transformer_4: 60,
+    transformer_5: 64,
+  });
   const agentRef = useRef<any>(null);
 
   // const { allAssets, systemMetrics, transformerSummaries } = useProcessedData();
@@ -150,6 +156,30 @@ export default function UtilityDashboard() {
     };
   }, [forceNormal]);
 
+  // Effect to update loads every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDynamicLoads((prevLoads) => {
+        const newLoads = { ...prevLoads };
+        // Skip transformer_1 and only update others
+        Object.keys(newLoads).forEach((key) => {
+          if (key === "transformer_1") return; // Skip first transformer
+          const currentLoad = newLoads[key];
+          // Randomly decide whether to increase or decrease
+          const shouldIncrease = Math.random() > 0.5;
+          if (shouldIncrease) {
+            newLoads[key] = Math.min(currentLoad + 2, 100);
+          } else {
+            newLoads[key] = Math.max(currentLoad - 2, 0);
+          }
+        });
+        return newLoads;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const getDynamicLoad = (phase: string) => {
     if (phase === "Normal") return 60;
     if (phase === "Warning") return 80;
@@ -177,12 +207,12 @@ export default function UtilityDashboard() {
       name: "SoMA District Feeder",
       substationName: "Marina Substation",
       city: "San Francisco",
-      currentLoad: 88,
-      load: 88,
+      currentLoad: dynamicLoads.transformer_2,
+      load: dynamicLoads.transformer_2,
       status: "Warning" as const,
       metersCount: 15,
       coordinates: [37.8037, -122.4368],
-      margin: 100 - 88,
+      margin: 100 - dynamicLoads.transformer_2,
       region: "North",
       condition: "Normal",
       capacity: 860,
@@ -192,12 +222,12 @@ export default function UtilityDashboard() {
       name: "Mission District Feeder ",
       substationName: "Richmond Substation",
       city: "San Francisco",
-      currentLoad: 80,
-      load: 80,
+      currentLoad: dynamicLoads.transformer_3,
+      load: dynamicLoads.transformer_3,
       status: "Warning" as const,
       metersCount: 8,
       coordinates: [37.7499, -122.4444],
-      margin: 100 - 80,
+      margin: 100 - dynamicLoads.transformer_3,
       region: "North",
       condition: "Normal",
       capacity: 430,
@@ -207,12 +237,12 @@ export default function UtilityDashboard() {
       name: "Marina District Feeder",
       substationName: "Sunset Substation",
       city: "San Francisco",
-      currentLoad: 60,
-      load: 60,
+      currentLoad: dynamicLoads.transformer_4,
+      load: dynamicLoads.transformer_4,
       status: "Normal" as const,
       metersCount: 10,
       coordinates: [37.7534, -122.4944],
-      margin: 100 - 60,
+      margin: 100 - dynamicLoads.transformer_4,
       region: "North",
       condition: "Normal",
       capacity: 400,
@@ -222,12 +252,12 @@ export default function UtilityDashboard() {
       name: "Sunset District Feeder",
       substationName: "Bayview Substation",
       city: "San Francisco",
-      currentLoad: 60,
-      load: 60,
+      currentLoad: dynamicLoads.transformer_5,
+      load: dynamicLoads.transformer_5,
       status: "Normal" as const,
       metersCount: 14,
       coordinates: [37.7899, -122.4044],
-      margin: 100 - 60,
+      margin: 100 - dynamicLoads.transformer_5,
       region: "West",
       warningLight: false,
       condition: "Normal",
@@ -320,7 +350,7 @@ export default function UtilityDashboard() {
                     value="Critical"
                     className="px-4 ml-2 mr-2 py-1 rounded-r-lg font-semibold text-base data-[state=active]:bg-[#2563eb] data-[state=active]:text-white data-[state=inactive]:bg-[#232B3E] data-[state=inactive]:text-white/70"
                   >
-                    Emergency
+                    Emergency Services
                   </TabsTrigger>
                   <TabsTrigger
                     value="Transformers"

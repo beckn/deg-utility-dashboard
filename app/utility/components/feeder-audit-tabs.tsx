@@ -5,7 +5,7 @@ const AUDIT_DATA = [
   {
     id: 1,
     name: "Jason's Household",
-    meterId: "123456789",
+    meterId: "PG-458712",
     orderId: "ABC123",
     consumption: 100,
     percent: 10,
@@ -14,7 +14,7 @@ const AUDIT_DATA = [
   {
     id: 6,
     name: "Anderson Villa",
-    meterId: "987654321",
+    meterId: "PG-469021",
     orderId: "XYZ789",
     consumption: 120,
     percent: 15,
@@ -23,7 +23,7 @@ const AUDIT_DATA = [
   {
     id: 7,
     name: "Monica's Duplex",
-    meterId: "555555555",
+    meterId: "PG-476335",
     orderId: "LMN456",
     consumption: 90,
     percent: 12,
@@ -31,8 +31,8 @@ const AUDIT_DATA = [
   },
   {
     id: 8,
-    name: "Ravi's Flat",
-    meterId: "444444444",
+    name: "Bob's Condo",
+    meterId: "PG-481998",
     orderId: "QRS234",
     consumption: 80,
     percent: 11,
@@ -41,7 +41,7 @@ const AUDIT_DATA = [
   {
     id: 4,
     name: "Jackson's Apartment",
-    meterId: "123456789",
+    meterId: "PG-493124",
     orderId: "ABC123",
     consumption: 100,
     percent: -10,
@@ -59,7 +59,7 @@ function getStatusColorBlend(load: number) {
   // Green: #4F9835, Yellow: #D8A603, Red: #983535
   if (load < 70) {
     // Normal (green)
-    return 'rgb(79,152,53)';
+    return "rgb(79,152,53)";
   } else if (load < 80) {
     // Blend green to yellow between 70 and 80
     const percent = (load - 70) / 10;
@@ -76,7 +76,7 @@ function getStatusColorBlend(load: number) {
     return `#D8A603`;
   } else {
     // Critical (red)
-    return 'rgb(152,53,53)';
+    return "rgb(152,53,53)";
   }
 }
 
@@ -93,7 +93,7 @@ function AnimatedLoadBar({ load }: { load: number }) {
       style={{
         width: `${progress}%`,
         background: color,
-        transition: 'width 4s cubic-bezier(0.4,0,0.2,1), background 2s',
+        transition: "width 4s cubic-bezier(0.4,0,0.2,1), background 2s",
       }}
     />
   );
