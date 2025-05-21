@@ -1,56 +1,48 @@
-import type { StrapiApiRoot, SimplifiedMeter } from "../types"
+import type { StrapiApiRoot,  SimplifiedData,  SubstationWithUtility, TransformerWithSubstation, MeterWithTransformer } from "../types"
 
-export const simplifyUtilData = (data: StrapiApiRoot): SimplifiedMeter[] => {
-  const result: SimplifiedMeter[] = []
+export const simplifyUtilData = (data: StrapiApiRoot): SimplifiedData => {
+  const substations: SubstationWithUtility[] = [];
+  const transformers: TransformerWithSubstation[] = [];
+  const meters: MeterWithTransformer[] = [];
 
   data.utilities.forEach((util) => {
     util.substations.forEach((sub) => {
+      // Substation with utility context
+      const subWithUtility = {
+        ...sub,
+        utilityId: util.id,
+        utilityName: util.name,
+        utilityCity: util.city,
+        utilityState: util.state,
+        utilityLatitude: util.latitude,
+        utilityLongtitude: util.longtitude,
+        utilityPincode: util.pincode,
+      };
+      substations.push(subWithUtility);
       sub.transformers.forEach((tr) => {
+        // Transformer with substation (with utility) context
+        const trWithSubstation = {
+          ...tr,
+          ...subWithUtility,
+        };
+        // transformers.push(trWithSubstation);
         tr.meters.forEach((meter) => {
-          result.push({
-            utilityId: util.id,
-            utilityName: util.name,
-            utilityCity: util.city,
-            utilityState: util.state,
-            substationId: sub.id,
-            substationName: sub.name,
-            substationCity: sub.city,
-            substationState: sub.state,
-            substationLatitude: sub.latitude,
-            substationLongtitude: sub.longtitude,
-            transformerId: tr.id,
-            transformerName: tr.name,
-            transformerCity: tr.city,
-            transformerState: tr.state,
-            meterId: meter.id,
-            meterCode: meter.code,
-            meterType: meter.type,
-            meterMaxCapacityKW: meter.max_capacity_KW,
-            meterCity: meter.city,
-            meterState: meter.state,
-            meterLatitude: meter.latitude,
-            meterLongitude: meter.longitude,
-            meterPincode: meter.pincode,
-            meterConsumptionLoadFactor: meter.consumptionLoadFactor,
-            meterProductionLoadFactor: meter.productionLoadFactor,
-            energyResourceId: meter.energyResource?.id,
-            energyResourceName: meter.energyResource?.name,
-            energyResourceType: meter.energyResource?.type,
-            ders:
-              meter.energyResource?.ders?.map((der) => ({
-                id: der.id,
-                switched_on: der.switched_on,
-                applianceId: der.appliance.id,
-                applianceName: der.appliance.name,
-                appliancePowerRating: der.appliance.powerRating,
-                applianceBaseKWh: der.appliance.baseKWh,
-                applianceDescription: der.appliance.description,
-              })) || [],
-          })
-        })
-      })
-    })
-  })
+          // Meter with transformer (with substation and utility) context
+          const meterWithTransformer = {
+            ...meter,
+            ...trWithSubstation,
+          };
+          meters.push(meterWithTransformer);
+        });
+      });
+    });
+  });
 
-  return result
+  return { substations, transformers, meters };
+}
+
+export const simplifyUtilDataForDashboard = (data: StrapiApiRoot) => {
+  return data.utilities.flatMap((utility) =>
+    utility.substations.flatMap((substation) => substation.transformers)
+  )
 }

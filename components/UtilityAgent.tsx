@@ -173,11 +173,6 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div className="flex items-center gap-3 w-full justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-base font-bold text-primary-foreground">
-                  AI
-                </span>
-              </div>
               <span className="text-lg font-semibold">Agent Chat</span>
             </div>
             <span className="ml-3 text-xs text-green-400 flex items-center gap-1">
@@ -188,7 +183,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       </div>
       {/* Messages */}
       <div
-        className="flex-1 px-6 py-4 overflow-y-auto flex flex-col gap-4 bg-card"
+        className="flex-1 px-6 py-4 overflow-y-auto flex flex-col gap-1 bg-card"
         style={{ minHeight: 0 }}
       >
         {messages.map((message) => (
@@ -212,21 +207,22 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
                 {message.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
+                  hour12: true,
                 })}
               </span>
             </div>
-            <span
+            {/* <span
               className={
                 message.isUser ? "text-blue-400" : "text-blue-300 font-semibold"
               }
             >
               {message.isUser ? "You" : "Grid Agent"}
-            </span>
+            </span> */}
             <div
               className={`mt-1 inline-block px-3 py-2 rounded-lg ${
                 message.isUser
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground"
+                  : "chat-input-message text-foreground"
               }`}
             >
               {message.text}
@@ -244,7 +240,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
       <div className="p-3 border-t border-border flex items-center gap-2">
         <input
           type="text"
-          className="flex-1 rounded-lg px-3 py-2 bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          className="flex-1 rounded-lg px-3 py-2 chat-input-message border border-border focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="Type a Message"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}

@@ -1,55 +1,125 @@
+import { useState } from "react"
 import type { TransformerSummaryItem } from "../lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
+
+const mockAuditTrail = [
+  {
+    id: 1,
+    name: "Jason's Household",
+    meterId: "123456789",
+    orderId: "ABC123",
+    consumption: 100,
+    percent: 10,
+    up: false,
+    accepted: true,
+  },
+  {
+    id: 2,
+    name: "Jackson's Apartment",
+    meterId: "123456789",
+    orderId: "ABC123",
+    consumption: 100,
+    percent: 10,
+    up: true,
+    accepted: false,
+  },
+  // ...repeat or add more for demo
+]
 
 interface DashboardSidebarProps {
   transformerSummaries: TransformerSummaryItem[]
 }
 
 export function DashboardSidebar({ transformerSummaries }: DashboardSidebarProps) {
-  return (
-    <aside className="w-full md:w-80 shadow-lg flex flex-col bg-white p-3 rounded-lg border border-gray-200">
-      <div className="pb-2 mb-2 border-b border-gray-200">
-        <span className="text-lg font-semibold text-gray-700">Transformer Summary</span>
-      </div>
+  const [tab, setTab] = useState<'feeder' | 'audit'>('feeder')
 
-      <ScrollArea className="flex-1 pr-1">
-        <div className="space-y-3">
-          {transformerSummaries.length > 0 ? (
-            transformerSummaries.map((item) => (
-              <Card key={item.id} className="bg-indigo-50 hover:shadow-md transition-shadow border border-indigo-100">
-                <CardContent className="p-3">
-                  <h3 className="font-semibold text-gray-800 text-sm mb-1.5 truncate" title={item.name}>
-                    {item.name}
-                  </h3>
-                  <div className="text-xs text-gray-500 mb-1">Substation: {item.substationName}</div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">City</span>
-                      <span className="font-medium text-gray-700">{item.city}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Load</span>
-                      <span className="font-medium text-gray-700">{item.currentLoad}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Meters</span>
-                      <span className="font-medium text-gray-700">{item.metersCount}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-500">Status</span>
-                      <StatusBadge status={item.status} size="sm" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="text-gray-500 text-sm text-center py-10">No transformer data available.</div>
-          )}
+  return (
+    <aside className="w-full h-full flex flex-col bg-card p-0 rounded-lg border border-border shadow-lg">
+      {/* Sticky Tabs */}
+      <div className="sticky top-0 z-10 bg-card rounded-t-lg px-4 pt-4 pb-2">
+        <div className="flex gap-2">
+          <button
+            className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-colors ${tab === 'feeder' ? 'bg-blue-700 text-white shadow' : 'bg-transparent text-foreground/70 hover:bg-blue-900/30'}`}
+            onClick={() => setTab('feeder')}
+          >
+            Feeder Summary
+          </button>
+          <button
+            className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-colors ${tab === 'audit' ? 'bg-blue-700 text-white shadow' : 'bg-transparent text-foreground/70 hover:bg-blue-900/30'}`}
+            onClick={() => setTab('audit')}
+          >
+            Audit Trail
+          </button>
         </div>
-      </ScrollArea>
+      </div>
+      {/* Scrollable Content */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <ScrollArea className="flex-1 min-h-0 px-3 pb-3">
+          {tab === 'feeder' ? (
+            <div className="space-y-3 mt-2">
+              {transformerSummaries.length > 0 ? (
+                transformerSummaries.map((item) => (
+                  <Card key={item.id} className="bg-card border border-border rounded-xl shadow-none py-1">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold text-foreground text-base truncate" title={item.name}>
+                          {item.name}
+                        </h3>
+                        <StatusBadge status={item.status} size="sm" />
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-1 flex justify-between">
+                        <span>Region: {item.city}</span>
+                        <span>Margin: {item.margin}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded bg-white dark:bg-white mb-1">
+                        <div
+                          className={`h-2 rounded ${item.status === 'Critical' ? 'bg-red-500' : item.status === 'Warning' ? 'bg-yellow-400' : 'bg-green-500'}`}
+                          style={{ width: `${item.currentLoad}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{item.currentLoad}%</span>
+                        <span>{item.maxCapacity} kW</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-muted-foreground text-sm text-center py-10">No transformer data available.</div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 mt-2">
+              {mockAuditTrail.map((item) => (
+                <Card key={item.id} className="bg-card border border-border rounded-xl shadow-none py-1">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold text-foreground text-base truncate" title={item.name}>
+                        {item.name}
+                      </h3>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span>Meter ID : {item.meterId}</span>
+                      <span>Order ID : {item.orderId}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span>Current Consumption (kWh): <span className="text-foreground font-semibold">{item.consumption}</span></span>
+                      <span className={item.up ? 'text-red-400' : 'text-green-400'}>
+                        {item.percent}% {item.up ? '↑' : '↓'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      DFP Accepted: <span className={item.accepted ? 'text-green-400' : 'text-red-400'}>{item.accepted ? 'True' : 'False'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
     </aside>
   )
 }
