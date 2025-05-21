@@ -1,49 +1,34 @@
-import { useState } from "react";
-import type { TransformerSummaryItem, StrapiAuditTrail } from "../lib/types";
+import { useEffect, useState } from "react";
+import type {
+  TransformerSummaryItem,
+  SimplifiedAuditTrail,
+} from "../lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "./status-badge";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tabs } from "@/components/ui/tabs";
 import { useSimplifiedUtilDataStore } from "../lib/stores/utility-store";
 
-const mockAuditTrail = [
-  {
-    id: 1,
-    name: "Jason's Household",
-    meterId: "123456789",
-    orderId: "ABC123",
-    consumption: 100,
-    percent: 10,
-    up: false,
-    accepted: true,
-  },
-  {
-    id: 2,
-    name: "Jackson's Apartment",
-    meterId: "123456789",
-    orderId: "ABC123",
-    consumption: 100,
-    percent: 10,
-    up: true,
-    accepted: false,
-  },
-  // ...repeat or add more for demo
-];
-
 interface DashboardSidebarProps {
   transformerSummaries: TransformerSummaryItem[];
-  auditTrail: StrapiAuditTrail[];
+  auditTrail: SimplifiedAuditTrail[];
+  fetchAuditTrails: () => Promise<void>;
 }
 
 export function DashboardSidebar({
   transformerSummaries,
   auditTrail,
+  fetchAuditTrails,
 }: DashboardSidebarProps) {
   const [tab, setTab] = useState<"feeder" | "audit">("feeder");
-  const {
-    isLoading: isFeederSummaryLoading,
-    isAuditTrailLoading,
-  } = useSimplifiedUtilDataStore();
+  const { isLoading: isFeederSummaryLoading, isAuditTrailLoading } =
+    useSimplifiedUtilDataStore();
+
+  useEffect(() => {
+    if (tab === "audit") {
+      fetchAuditTrails();
+    }
+  }, [fetchAuditTrails, tab]);
 
   return (
     <aside className="w-full h-full flex flex-col bg-card p-0 rounded-lg border border-border shadow-lg">
@@ -152,17 +137,17 @@ export function DashboardSidebar({
                           <span>
                             Meter ID :{" "}
                             <span className="truncate">
-                              {item.meterId.length > 10
-                                ? `${item.meterId.slice(0, 10)}...`
-                                : item.meterId}
+                              {item.meterId.toString().length > 10
+                                ? `${item.meterId.toString().slice(0, 10)}...`
+                                : item.meterId.toString()}
                             </span>
                           </span>
                           <span>
                             Order ID :{" "}
                             <span className="truncate">
-                              {item.orderId.length > 10
-                                ? `${item.orderId.slice(0, 10)}...`
-                                : item.orderId}
+                              {item.orderId.toString().length > 10
+                                ? `${item.orderId.toString().slice(0, 10)}...`
+                                : item.orderId.toString()}
                             </span>
                           </span>
                         </div>

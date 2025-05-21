@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { strapiClient } from "../api/strapi-client";
 import {
+  simplifyAuditTrailData,
   simplifyUtilData,
   simplifyUtilDataForDashboard,
 } from "../utils/data-processor";
@@ -12,12 +13,13 @@ import type {
   StrapiTransformer,
   TransformerWithSubstation,
   StrapiAuditTrail,
+  SimplifiedAuditTrail,
 } from "../types";
 
 type SimplifiedDataState = {
   data: SimplifiedData;
   transformerData: StrapiTransformer[];
-  auditTrail: StrapiAuditTrail[];
+  auditTrail: SimplifiedAuditTrail[];
   setData: (data: SimplifiedData) => void;
   clear: () => void;
   fetchAndStore: () => Promise<void>;
@@ -31,6 +33,7 @@ type SimplifiedDataState = {
   ) => void;
   fetchAndStoreTransformerData: (transformerId: number) => Promise<void>;
   startStream: (transformerId: number) => Promise<void>;
+  fetchAndStoreAuditTrail: () => Promise<void>;
 };
 
 export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
@@ -50,7 +53,7 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
 
     setData: (data) => set({ data }),
 
-    setAuditTrail: (auditTrail: StrapiAuditTrail[]) => set({ auditTrail }),
+    setAuditTrail: (auditTrail: SimplifiedAuditTrail[]) => set({ auditTrail }),
 
     clear: () =>
       set({ data: { substations: [], transformers: [], meters: [] } }),
@@ -235,13 +238,17 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
 
     fetchAndStoreAuditTrail: async () => {
       set({ isAuditTrailLoading: true });
+      const url = "https://bpp-unified-strapi-deg.becknprotocol.io/unified-beckn-energy/audit-trail";
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Connection': 'keep-alive'
+        }
+      });
 
-      const { data, error } = await strapiClient.GET(
-        "/meter-data-simulator/audit-trail",
-      );
-
-      if (error) {
-        console.error("Error fetching audit trail data from Strapi:", error);
+      if (!response.ok) {
+        console.error("Error fetching audit trail data from Strapi:", response.statusText);
         set({
           auditTrail: [],
           isAuditTrailLoading: false,
@@ -249,16 +256,15 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
         return;
       }
 
-      if (data && data.auditTrail) {
+      if (response.ok) {
+        const data = await response.json();
+        const simplified = simplifyAuditTrailData(data);
         set({
-          auditTrail: data.auditTrail,
+          auditTrail: simplified,
           isAuditTrailLoading: false,
         });
       } else {
-        console.error(
-          "Fetched data is null or not in expected format (missing audit trail array):",
-          data
-        );
+        console.error("Fetched data is null or not in expected format (missing audit trail array)");
         set({
           auditTrail: [],
           isAuditTrailLoading: false,
