@@ -73,18 +73,20 @@ export function useProcessedData() {
               parseFloat(String(tr.longtitude)),
             ],
             status: tr.status, // You can calculate status if needed
+            emergencyService: tr.emergencyService || false,
           });
         }
         transformerSummaries.push({
           id: tr.id.toString(),
           name: tr.name,
           substationName: "", // Fill if needed
-          city: tr.city,
+          city: `${tr.city}, ${tr.state}`,
           currentLoad: tr.currentLoad || 0,
           status: tr.status || "Normal",
           metersCount: tr.meters ? tr.meters.length : 0,
           maxCapacity: tr.max_capacity_KW,
           margin: tr.margin || 0,
+          emergencyService: tr.emergencyService || false,
         });
       });
     }
@@ -92,19 +94,12 @@ export function useProcessedData() {
     // 3. Process Households (Meters)
     meters.forEach((meter) => {
       if (meter.latitude && meter.longitude) {
-        const lat =
-          typeof meter.latitude === "number"
-            ? meter.latitude
-            : parseFloat(meter.latitude);
-        const lng =
-          typeof meter.longitude === "number"
-            ? meter.longitude
-            : parseFloat(meter.longitude);
         allAssets.push({
           id: `house_${meter.id}`,
           name: meter.code,
           type: "household",
-          coordinates: [lat, lng],
+          coordinates: [parseFloat(String(meter.latitude)),
+            parseFloat(String(meter.longitude)),],
           status: "Normal", // You can calculate status if needed
           hasDers: meter.ders && meter.ders.length > 0,
         });

@@ -90,27 +90,25 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
     },
 
     fetchAndStoreTransformerData: async (transformerId: number) => {
-      get().startStream(transformerId);
+      try {
+        get().startStream(transformerId);
+      } catch (error) {
+        console.error("Error fetching transformer data:", error);
+      }
     },
 
     startStream: async (transformerId: number) => {
       const url = `https://playground.becknprotocol.io/meter-data-simulator/transformer-load-streamed/${transformerId}`;
-      const reconnectDelay = 5000;
-      let reconnectAttempts = 0;
-      const maxReconnects = 5;
-      let abortController: AbortController | null = null;
 
       const connect = async () => {
         try {
-          // Cancel any existing connection
-          if (abortController) {
-            abortController.abort();
-          }
-
-          // Create new abort controller for this connection
-          abortController = new AbortController();
-
-          const response = await fetch(url);
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Connection': 'keep-alive'
+            }
+          });
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -156,17 +154,21 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
                       status: newObj.health_status,
                       currentLoad: newObj.load_percentage,
                       margin: newObj.margin_percentage,
+                      emergencyService: newObj?.transformer?.emergency_service || false,
                     } as TransformerWithSubstation;
 
                     set((state) => {
-                      const filtered = state.data.transformers.filter(
-                        (t) => t.id !== newTransformerData.id
-                      );
+                      const transformers = [...state.data.transformers];
+                      const index = transformers.findIndex(t => t.id === newTransformerData.id);
+                      if (index !== -1) {
+                        transformers[index] = newTransformerData;
+                      } else {
+                        transformers.push(newTransformerData);
+                      }
                       return {
                         data: {
-                          substations: state.data.substations,
-                          transformers: [...filtered, newTransformerData],
-                          meters: state.data.meters,
+                          ...state.data,
+                          transformers,
                         },
                       };
                     });
@@ -182,12 +184,15 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
                 return;
               }
               console.error("Error reading chunk:", error);
+              connect();
+              throw error;
             }
           };
 
           return readChunk();
         } catch (err) {
           console.error("Connection error");
+          connect();
         }
       };
 

@@ -29,8 +29,7 @@ export const simplifyUtilData = (data: StrapiApiRoot): SimplifiedData => {
         tr.meters.forEach((meter) => {
           // Meter with transformer (with substation and utility) context
           const meterWithTransformer = {
-            ...meter,
-            ...trWithSubstation,
+            ...meter
           };
           meters.push(meterWithTransformer);
         });
