@@ -9,7 +9,7 @@ const AUDIT_DATA = [
     orderId: "ABC123",
     consumption: 100,
     percent: 10,
-    accepted: true
+    accepted: true,
   },
   {
     id: 6,
@@ -18,7 +18,7 @@ const AUDIT_DATA = [
     orderId: "XYZ789",
     consumption: 120,
     percent: 15,
-    accepted: true
+    accepted: true,
   },
   {
     id: 7,
@@ -27,7 +27,7 @@ const AUDIT_DATA = [
     orderId: "LMN456",
     consumption: 90,
     percent: 12,
-    accepted: true
+    accepted: true,
   },
   {
     id: 8,
@@ -36,7 +36,7 @@ const AUDIT_DATA = [
     orderId: "QRS234",
     consumption: 80,
     percent: 11,
-    accepted: true
+    accepted: true,
   },
   {
     id: 4,
@@ -45,14 +45,13 @@ const AUDIT_DATA = [
     orderId: "ABC123",
     consumption: 100,
     percent: -10,
-    accepted: false
-  }
+    accepted: false,
+  },
 ];
 
-
 function getStatus(load: number) {
-  if (load > 100) return "Critical";
-  if (load < 70) return load < 50 ? "Normal" : "Warning";
+  if (load >= 90) return "Critical";
+  if (load < 80) return load < 70 ? "Normal" : "Warning";
   return "Warning";
 }
 
@@ -69,7 +68,10 @@ interface FeederAuditTabsProps {
   onAuditTrailClick?: () => void;
 }
 
-export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsProps) {
+export function FeederAuditTabs({
+  feeders,
+  onAuditTrailClick,
+}: FeederAuditTabsProps) {
   const [tab, setTab] = useState("feeder");
   const [visibleCount, setVisibleCount] = useState(1);
 
@@ -161,7 +163,7 @@ export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsP
                   </div>
                   <div className="flex justify-between text-xs text-[#B0B6C3]">
                     <span>{item.load}%</span>
-                    <span>{item.capacity} 100 kW</span>
+                    <span>{item.capacity} kW</span>
                   </div>
                 </div>
                 {idx !== feeders.length - 1 && (
@@ -178,8 +180,8 @@ export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsP
                 className="bg-[#23243A] rounded-lg p-4 shadow border border-[#23243A] animate-fade-in"
                 style={{
                   opacity: 0,
-                  animation: 'fadeInUp 0.5s ease forwards',
-                  animationDelay: '0ms',
+                  animation: "fadeInUp 0.5s ease forwards",
+                  animationDelay: "0ms",
                 }}
               >
                 <div className="font-semibold text-white text-base underline mb-1">
