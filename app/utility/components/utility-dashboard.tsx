@@ -35,6 +35,7 @@ export default function UtilityDashboard() {
   const [activePanel, setActivePanel] = useState<
     "profile" | "audit" | "controls"
   >("profile");
+  const [mapZoom, setMapZoom] = useState(12);
 
   // const { allAssets, systemMetrics, transformerSummaries } = useProcessedData();
 
@@ -62,14 +63,24 @@ export default function UtilityDashboard() {
     ],
     Transformers: [
       { lat: 37.768, lng: -122.4376, type: "Transformers" },
-      { lat: 37.778, lng: -122.4276, type: "Transformers" },
       { lat: 37.788, lng: -122.4176, type: "Transformers" },
     ],
     Households: [
-      { lat: 37.775, lng: -122.4183, type: "Households" },
-      { lat: 37.765, lng: -122.4283, type: "Households" },
-      { lat: 37.755, lng: -122.4383, type: "Households" },
+      { lat: 37.7749, lng: -122.4194, type: "Households" }, // Downtown / Civic Center
+      { lat: 37.7599, lng: -122.4148, type: "Households" }, // Mission District
+      { lat: 37.7489, lng: -122.4184, type: "Households" }, // Bernal Heights
+      { lat: 37.7648, lng: -122.463, type: "Households" }, // Sunset District
+      { lat: 37.7833, lng: -122.4397, type: "Households" }, // Haight-Ashbury
+      { lat: 37.7691, lng: -122.4862, type: "Households" }, // Outer Richmond
+      { lat: 37.7929, lng: -122.3938, type: "Households" }, // Embarcadero
+      { lat: 37.7547, lng: -122.4477, type: "Households" }, // Inner Sunset
+      { lat: 37.7793, lng: -122.4192, type: "Households" }, // Market St / SoMa
+      { lat: 37.785, lng: -122.4324, type: "Households" }, // Western Addition
+      { lat: 37.8078, lng: -122.4177, type: "Households" }, // North Beach
+      { lat: 37.8001, lng: -122.4376, type: "Households" }, // Marina District
+      { lat: 37.775, lng: -122.45, type: "Households" }, // Lone Mountain
     ],
+
     "DER's": [
       { lat: 37.78, lng: -122.42, type: "DER's" },
       { lat: 37.77, lng: -122.43, type: "DER's" },
@@ -84,6 +95,11 @@ export default function UtilityDashboard() {
   const handleTabChange = (value: string) => {
     setSelectedFilter(value);
     setPingMarkers(tabMarkers[value as keyof typeof tabMarkers] || []);
+    if (value === "Transformers") {
+      setMapZoom(14);
+    } else {
+      setMapZoom(12);
+    }
   };
 
   useEffect(() => {
@@ -94,40 +110,31 @@ export default function UtilityDashboard() {
   const transformerSummaries = [
     {
       id: "transformer_1",
-      name: "Mission District Transformer",
+      name: "Central Feeder Hub",
       substationName: "Mission Substation",
       city: "San Francisco",
-      currentLoad: 100,
-      load: 110,
+      currentLoad: 120,
+      load: 120,
       status: "Critical" as const,
       metersCount: 12,
       coordinates: [37.7599, -122.4148],
+      margin: -16.4,
     },
     {
       id: "transformer_2",
-      name: "Marina District Transformer",
+      name: "SoMA District Feeder",
       substationName: "Marina Substation",
       city: "San Francisco",
-      currentLoad: 28,
-      load: 28,
-      status: "normal" as const,
+      currentLoad: 88,
+      load: 88,
+      status: "Warning" as const,
       metersCount: 15,
       coordinates: [37.8037, -122.4368],
+      margin: -16.4,
     },
     {
       id: "transformer_3",
-      name: "Sunset District Transformer",
-      substationName: "Sunset Substation",
-      city: "San Francisco",
-      currentLoad: 46,
-      load: 46,
-      status: "Normal" as const,
-      metersCount: 10,
-      coordinates: [37.7534, -122.4944],
-    },
-    {
-      id: "transformer_4",
-      name: "Richmond District Transformer",
+      name: "Mission District Feeder ",
       substationName: "Richmond Substation",
       city: "San Francisco",
       currentLoad: 80,
@@ -135,17 +142,33 @@ export default function UtilityDashboard() {
       status: "Warning" as const,
       metersCount: 8,
       coordinates: [37.7499, -122.4444],
+      margin: -16.4,
     },
     {
+      id: "transformer_4",
+      name: "Marina District Feeder",
+      substationName: "Sunset Substation",
+      city: "San Francisco",
+      currentLoad: 46,
+      load: 46,
+      status: "Normal" as const,
+      metersCount: 10,
+      coordinates: [37.7534, -122.4944],
+      margin: -16.4,
+    },
+
+    {
       id: "transformer_5",
-      name: "Bayview District Transformer",
+      name: "Sunset District Feeder",
       substationName: "Bayview Substation",
       city: "San Francisco",
-      currentLoad: 78,
-      load: 78,
-      status: "Warning" as const,
+      currentLoad: 110,
+      load: 110,
+      status: "Critical" as const,
       metersCount: 14,
       coordinates: [37.7899, -122.4044],
+      margin: -16.4,
+      warningLight: false,
     },
   ];
 
@@ -224,6 +247,7 @@ export default function UtilityDashboard() {
                     ? transformerPingMarkers
                     : pingMarkers
                 }
+                zoom={mapZoom}
               />
             </div>
           </section>

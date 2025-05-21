@@ -132,7 +132,7 @@ export function FeederAuditTabs({ feeders }: FeederAuditTabsProps) {
                   </div>
                   <div className="flex justify-between text-xs text-[#B0B6C3]">
                     <span>{item.load}%</span>
-                    <span>{item.capacity} kW</span>
+                    <span>{item.capacity} 100 kW</span>
                   </div>
                 </div>
                 {idx !== feeders.length - 1 && (
