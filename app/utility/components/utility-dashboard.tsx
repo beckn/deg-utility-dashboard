@@ -107,19 +107,46 @@ export default function UtilityDashboard() {
     fetchAndStore();
   }, [fetchAndStore]);
 
-  // Three transformers in San Francisco (JSON array)
+  // Timer-based status logic
+  const [statusPhase, setStatusPhase] = useState<
+    "Normal" | "Warning" | "Critical"
+  >("Normal");
+
+  useEffect(() => {
+    let timeout1: NodeJS.Timeout;
+    let timeout2: NodeJS.Timeout;
+    setStatusPhase("Normal");
+    timeout1 = setTimeout(() => {
+      setStatusPhase("Warning");
+      timeout2 = setTimeout(() => {
+        setStatusPhase("Critical");
+      }, 15000); // 15 seconds for Warning
+    }, 30000); // 30 seconds for Normal
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
+  }, []);
+
+  const getDynamicLoad = (phase: string) => {
+    if (phase === "Normal") return 30;
+    if (phase === "Warning") return 80;
+    return 120; // Critical
+  };
+
   const transformerSummaries = [
     {
       id: "transformer_1",
       name: "Central Feeder Hub",
       substationName: "Mission Substation",
       city: "San Francisco",
-      currentLoad: 120,
-      load: 120,
-      status: "Critical" as const,
+      currentLoad: getDynamicLoad(statusPhase),
+      load: getDynamicLoad(statusPhase),
+      status: statusPhase,
       metersCount: 12,
       coordinates: [37.7599, -122.4148],
       margin: -16.4,
+      region: "North",
     },
     {
       id: "transformer_2",
@@ -132,6 +159,7 @@ export default function UtilityDashboard() {
       metersCount: 15,
       coordinates: [37.8037, -122.4368],
       margin: -16.4,
+      region: "North",
     },
     {
       id: "transformer_3",
@@ -144,6 +172,7 @@ export default function UtilityDashboard() {
       metersCount: 8,
       coordinates: [37.7499, -122.4444],
       margin: -16.4,
+      region: "North",
     },
     {
       id: "transformer_4",
@@ -156,8 +185,8 @@ export default function UtilityDashboard() {
       metersCount: 10,
       coordinates: [37.7534, -122.4944],
       margin: -16.4,
+      region: "North",
     },
-
     {
       id: "transformer_5",
       name: "Sunset District Feeder",
@@ -169,6 +198,7 @@ export default function UtilityDashboard() {
       metersCount: 14,
       coordinates: [37.7899, -122.4044],
       margin: -16.4,
+      region: "West",
       warningLight: false,
     },
   ];
@@ -197,8 +227,8 @@ export default function UtilityDashboard() {
       <div className="h-[calc(100vh-4rem)] flex flex-row p-2 gap-2 bg-background">
         {/* Left: Sidebar */}
         <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
-          <DashboardSidebar 
-            transformerSummaries={transformerSummaries} 
+          <DashboardSidebar
+            transformerSummaries={transformerSummaries}
             onAuditTrailClick={() => setShowAuditTrailMessages(true)}
           />
         </div>
