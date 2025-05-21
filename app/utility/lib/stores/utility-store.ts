@@ -11,17 +11,20 @@ import type {
   MeterWithTransformer,
   StrapiTransformer,
   TransformerWithSubstation,
+  StrapiAuditTrail,
 } from "../types";
 
 type SimplifiedDataState = {
   data: SimplifiedData;
   transformerData: StrapiTransformer[];
+  auditTrail: StrapiAuditTrail[];
   setData: (data: SimplifiedData) => void;
   clear: () => void;
   fetchAndStore: () => Promise<void>;
   selectedHouse: MeterWithTransformer | null;
   setSelectedHouse: (house: MeterWithTransformer | null) => void;
   isLoading: boolean;
+  isAuditTrailLoading: boolean;
   updateDerSettings: (
     meterId: number,
     newDersSettings: Array<{ id: number; isEnabled: boolean }>
@@ -36,13 +39,18 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
       substations: [],
       transformers: [],
       meters: [],
+      auditTrail: [],
     },
     selectedHouse: null,
     isLoading: false,
+    isAuditTrailLoading: false,
     transformerData: [],
+    auditTrail: [],
     setSelectedHouse: (house) => set({ selectedHouse: house }),
 
     setData: (data) => set({ data }),
+
+    setAuditTrail: (auditTrail: StrapiAuditTrail[]) => set({ auditTrail }),
 
     clear: () =>
       set({ data: { substations: [], transformers: [], meters: [] } }),
@@ -98,6 +106,7 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
     },
 
     startStream: async (transformerId: number) => {
+      set({ isLoading: true });
       const url = `https://playground.becknprotocol.io/meter-data-simulator/transformer-load-streamed/${transformerId}`;
 
       const connect = async () => {
@@ -193,6 +202,8 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
         } catch (err) {
           console.error("Connection error");
           connect();
+        } finally {
+          set({ isLoading: false });
         }
       };
 
@@ -220,6 +231,39 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
           },
         };
       });
+    },
+
+    fetchAndStoreAuditTrail: async () => {
+      set({ isAuditTrailLoading: true });
+
+      const { data, error } = await strapiClient.GET(
+        "/meter-data-simulator/audit-trail",
+      );
+
+      if (error) {
+        console.error("Error fetching audit trail data from Strapi:", error);
+        set({
+          auditTrail: [],
+          isAuditTrailLoading: false,
+        });
+        return;
+      }
+
+      if (data && data.auditTrail) {
+        set({
+          auditTrail: data.auditTrail,
+          isAuditTrailLoading: false,
+        });
+      } else {
+        console.error(
+          "Fetched data is null or not in expected format (missing audit trail array):",
+          data
+        );
+        set({
+          auditTrail: [],
+          isAuditTrailLoading: false,
+        });
+      }
     },
   })
 );

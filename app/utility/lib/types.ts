@@ -138,6 +138,7 @@ export interface StrapiUtility {
 
 export interface StrapiApiRoot {
   utilities: StrapiUtility[]
+  auditTrail: StrapiAuditTrail[]
 }
 
 // Processed data types
@@ -210,4 +211,15 @@ export interface SimplifiedData {
   substations: SubstationWithUtility[];
   transformers: TransformerWithSubstation[];
   meters: MeterWithTransformer[];
+}
+
+export interface StrapiAuditTrail {
+  id: number;
+  name: string;
+  meterId: string;
+  orderId: string;
+  consumption: number;
+  percent: number;
+  up: boolean;
+  accepted: boolean;
 }
