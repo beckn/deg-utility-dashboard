@@ -17,7 +17,7 @@ interface UtilityMapProps {
     status?: string;
     name?: string;
     load?: number;
-    warningLight: boolean;
+    warningLight?: boolean; // Make this optional
   }[];
   zoom?: number; // Add zoom prop
 }
