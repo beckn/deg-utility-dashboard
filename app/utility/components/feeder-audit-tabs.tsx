@@ -51,8 +51,8 @@ const AUDIT_DATA = [
 
 
 function getStatus(load: number) {
-  if (load > 100) return "Critical";
-  if (load < 70) return load < 50 ? "Normal" : "Warning";
+  if (load >= 90) return "Critical";
+  if (load < 80) return load < 70 ? "Normal" : "Warning";
   return "Warning";
 }
 
@@ -69,7 +69,10 @@ interface FeederAuditTabsProps {
   onAuditTrailClick?: () => void;
 }
 
-export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsProps) {
+export function FeederAuditTabs({
+  feeders,
+  onAuditTrailClick,
+}: FeederAuditTabsProps) {
   const [tab, setTab] = useState("feeder");
   const [visibleCount, setVisibleCount] = useState(1);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { useSimplifiedUtilDataStore } from "../lib/stores/utility-store";
 import { DashboardHeader } from "./dashboard-header";
@@ -41,6 +41,7 @@ export default function UtilityDashboard() {
     "Normal" | "Warning" | "Critical"
   >("Normal");
   const [forceNormal, setForceNormal] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("All");
 
   // const { allAssets, systemMetrics, transformerSummaries } = useProcessedData();
 
@@ -99,7 +100,24 @@ export default function UtilityDashboard() {
 
   const handleTabChange = (value: string) => {
     setSelectedFilter(value);
-    setPingMarkers(tabMarkers[value as keyof typeof tabMarkers] || []);
+    if (value === "Critical") {
+      // Show only critical transformers/feeders
+      setPingMarkers(
+        transformerSummaries
+          .filter((t) => t.condition === "Critical")
+          .map((t) => ({
+            lat: t.coordinates[0],
+            lng: t.coordinates[1],
+            type: "Feeders",
+            status: t.status,
+            condition: t.condition,
+            name: t.name,
+            load: t.load,
+          }))
+      );
+    } else {
+      setPingMarkers(tabMarkers[value as keyof typeof tabMarkers] || []);
+    }
     if (value === "Transformers") {
       setMapZoom(14);
     } else {
@@ -132,9 +150,9 @@ export default function UtilityDashboard() {
   }, [forceNormal]);
 
   const getDynamicLoad = (phase: string) => {
-    if (phase === "Normal") return 30;
+    if (phase === "Normal") return 60;
     if (phase === "Warning") return 80;
-    return 120; // Critical
+    return 90; // Critical
   };
 
   const transformerSummaries = [
@@ -150,6 +168,7 @@ export default function UtilityDashboard() {
       coordinates: [37.7599, -122.4148],
       margin: -16.4,
       region: "North",
+      condition: "Critical",
     },
     {
       id: "transformer_2",
@@ -163,6 +182,7 @@ export default function UtilityDashboard() {
       coordinates: [37.8037, -122.4368],
       margin: -16.4,
       region: "North",
+      condition: "Normal",
     },
     {
       id: "transformer_3",
@@ -176,33 +196,36 @@ export default function UtilityDashboard() {
       coordinates: [37.7499, -122.4444],
       margin: -16.4,
       region: "North",
+      condition: "Normal",
     },
     {
       id: "transformer_4",
       name: "Marina District Feeder",
       substationName: "Sunset Substation",
       city: "San Francisco",
-      currentLoad: 46,
-      load: 46,
+      currentLoad: 60,
+      load: 60,
       status: "Normal" as const,
       metersCount: 10,
       coordinates: [37.7534, -122.4944],
       margin: -16.4,
       region: "North",
+      condition: "Normal",
     },
     {
       id: "transformer_5",
       name: "Sunset District Feeder",
       substationName: "Bayview Substation",
       city: "San Francisco",
-      currentLoad: 110,
-      load: 110,
-      status: "Critical" as const,
+      currentLoad: 60,
+      load: 60,
+      status: "Normal" as const,
       metersCount: 14,
       coordinates: [37.7899, -122.4044],
       margin: -16.4,
       region: "West",
       warningLight: false,
+      condition: "Normal",
     },
   ];
 
@@ -212,14 +235,37 @@ export default function UtilityDashboard() {
     lng: t.coordinates[1],
     type: "Feeders",
     status: t.status,
+    condition: t.condition,
     name: t.name,
     load: t.load,
   }));
 
   // Find the critical transformer for agent chat
   const criticalTransformer = transformerSummaries.find(
-    (t) => t.status === "Critical"
+    (t) => t.condition === "Critical"
   );
+
+  interface Marker {
+    lat: number;
+    lng: number;
+    type: string;
+    condition?: string;
+    status?: string;
+    name?: string;
+    load?: number;
+  }
+
+  // Filter markers based on selected tab
+  const filteredMarkers = useMemo(() => {
+    const allMarkers: Marker[] = Object.values(tabMarkers).flat();
+    if (selectedTab === "All") {
+      return allMarkers;
+    } else if (selectedTab === "Critical") {
+      return allMarkers.filter((marker) => marker.condition === "Critical");
+    } else {
+      return allMarkers.filter((marker) => marker.type === selectedTab);
+    }
+  }, [selectedTab, tabMarkers]);
 
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground">
@@ -238,15 +284,15 @@ export default function UtilityDashboard() {
         {/* Center: Map and Metrics */}
         <main className="flex-1 flex flex-col gap-2 min-w-0">
           <section className="flex-1 p-3 bg-card rounded-lg shadow border border-border flex flex-col min-h-0">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
-              <Select defaultValue="San Francisco">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2 justify-end">
+              {/* <Select defaultValue="San Francisco">
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select Region" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="San Francisco">San Francisco</SelectItem>
                 </SelectContent>
-              </Select>
+              </Select> */}
               <Tabs
                 defaultValue="Feeders"
                 value={selectedFilter}
@@ -259,6 +305,12 @@ export default function UtilityDashboard() {
                     className="px-4 ml-2 mr-2 py-1 rounded-l-lg font-semibold text-base data-[state=active]:bg-[#2563eb] data-[state=active]:text-white data-[state=inactive]:bg-[#232B3E] data-[state=inactive]:text-white/70"
                   >
                     Feeders
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="Critical"
+                    className="px-4 ml-2 mr-2 py-1 rounded-r-lg font-semibold text-base data-[state=active]:bg-[#2563eb] data-[state=active]:text-white data-[state=inactive]:bg-[#232B3E] data-[state=inactive]:text-white/70"
+                  >
+                    Emergency
                   </TabsTrigger>
                   <TabsTrigger
                     value="Transformers"
