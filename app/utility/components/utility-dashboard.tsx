@@ -37,6 +37,10 @@ export default function UtilityDashboard() {
   >("profile");
   const [mapZoom, setMapZoom] = useState(12);
   const [showAuditTrailMessages, setShowAuditTrailMessages] = useState(false);
+  const [statusPhase, setStatusPhase] = useState<
+    "Normal" | "Warning" | "Critical"
+  >("Normal");
+  const [forceNormal, setForceNormal] = useState(false);
 
   // const { allAssets, systemMetrics, transformerSummaries } = useProcessedData();
 
@@ -107,12 +111,11 @@ export default function UtilityDashboard() {
     fetchAndStore();
   }, [fetchAndStore]);
 
-  // Timer-based status logic
-  const [statusPhase, setStatusPhase] = useState<
-    "Normal" | "Warning" | "Critical"
-  >("Normal");
-
   useEffect(() => {
+    if (forceNormal) {
+      setStatusPhase("Normal");
+      return;
+    }
     let timeout1: NodeJS.Timeout;
     let timeout2: NodeJS.Timeout;
     setStatusPhase("Normal");
@@ -126,7 +129,7 @@ export default function UtilityDashboard() {
       clearTimeout(timeout1);
       clearTimeout(timeout2);
     };
-  }, []);
+  }, [forceNormal]);
 
   const getDynamicLoad = (phase: string) => {
     if (phase === "Normal") return 30;
@@ -297,6 +300,7 @@ export default function UtilityDashboard() {
               }
               onClose={() => {}}
               showAuditTrailMessages={showAuditTrailMessages}
+              onDDRComplete={() => setForceNormal(true)}
             />
           </div>
         </div>

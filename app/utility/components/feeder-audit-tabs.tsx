@@ -9,25 +9,34 @@ const AUDIT_DATA = [
     orderId: "ABC123",
     consumption: 100,
     percent: 10,
-    accepted: true,
+    accepted: true
   },
   {
-    id: 2,
-    name: "Jackson's Apartment",
-    meterId: "123456789",
-    orderId: "ABC123",
-    consumption: 100,
-    percent: -10,
-    accepted: false,
+    id: 6,
+    name: "Anderson Villa",
+    meterId: "987654321",
+    orderId: "XYZ789",
+    consumption: 120,
+    percent: 15,
+    accepted: true
   },
   {
-    id: 3,
-    name: "Jason's Household",
-    meterId: "123456789",
-    orderId: "ABC123",
-    consumption: 100,
-    percent: 10,
-    accepted: true,
+    id: 7,
+    name: "Monica's Duplex",
+    meterId: "555555555",
+    orderId: "LMN456",
+    consumption: 90,
+    percent: 12,
+    accepted: true
+  },
+  {
+    id: 8,
+    name: "Ravi's Flat",
+    meterId: "444444444",
+    orderId: "QRS234",
+    consumption: 80,
+    percent: 11,
+    accepted: true
   },
   {
     id: 4,
@@ -36,18 +45,10 @@ const AUDIT_DATA = [
     orderId: "ABC123",
     consumption: 100,
     percent: -10,
-    accepted: false,
-  },
-  {
-    id: 5,
-    name: "Jason's Household",
-    meterId: "123456789",
-    orderId: "ABC123",
-    consumption: 100,
-    percent: 10,
-    accepted: true,
-  },
+    accepted: false
+  }
 ];
+
 
 function getStatus(load: number) {
   if (load > 100) return "Critical";

@@ -25,6 +25,7 @@ interface UtilityAgentProps {
   onClose?: () => void;
   initialMessage?: string;
   showAuditTrailMessages?: boolean;
+  onDDRComplete?: () => void;
 }
 
 const conversationFlow = [
@@ -157,6 +158,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
   onClose,
   initialMessage,
   showAuditTrailMessages = false,
+  onDDRComplete,
 }) => {
   const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -171,8 +173,12 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
 
   useEffect(() => {
     if (step < 3) {
-      setIsAgentTyping(true);
-      const timer = setTimeout(() => {
+      // Delay showing typing animation until 55 seconds
+      const typingTimer = setTimeout(() => {
+        setIsAgentTyping(true);
+      }, step === 0 ? 55000 : 0);
+
+      const messageTimer = setTimeout(() => {
         setIsAgentTyping(false);
         setMessages((prev) => [
           ...prev,
@@ -186,8 +192,12 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
         ]);
         setStep((prev) => prev + 1);
         if (step === 2) setInputEnabled(true);
-      }, step === 0 ? 60000 : 10000); // 1 minute for first message, 10 seconds for second
-      return () => clearTimeout(timer);
+      }, step === 0 ? 50000 : 10000); // 58 seconds for first message, 10 seconds for second
+
+      return () => {
+        clearTimeout(typingTimer);
+        clearTimeout(messageTimer);
+      };
     }
   }, [step]);
 
@@ -226,6 +236,10 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
           },
         ]);
         setStep(6);
+        // Call onDDRComplete when DDR participation message is shown
+        if (typeof onDDRComplete === "function") {
+          onDDRComplete();
+        }
         setTimeout(() => {
           setIsAgentTyping(true);
           setTimeout(() => {
@@ -248,7 +262,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
         setIsAgentTyping(false);
       };
     }
-  }, [showAuditTrailMessages, messages]);
+  }, [showAuditTrailMessages, messages, onDDRComplete]);
 
   const handleSendMessage = () => {
     if (!inputText.trim() || !inputEnabled) return;
