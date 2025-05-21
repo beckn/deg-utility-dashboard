@@ -142,8 +142,8 @@ export default function UtilityDashboard() {
       setStatusPhase("Warning");
       timeout2 = setTimeout(() => {
         setStatusPhase("Critical");
-      }, 15000); // 15 seconds for Warning
-    }, 30000); // 30 seconds for Normal
+      }, 5000); // 15 seconds for Warning
+    }, 10000); // 30 seconds for Normal
     return () => {
       clearTimeout(timeout1);
       clearTimeout(timeout2);
@@ -284,7 +284,11 @@ export default function UtilityDashboard() {
         <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
           <DashboardSidebar
             transformerSummaries={transformerSummaries}
-            onAuditTrailClick={() => agentRef.current?.handleAuditTrailFlow()}
+            onAuditTrailClick={() => {
+              if (statusPhase !== "Normal") {
+                agentRef.current?.handleAuditTrailFlow();
+              }
+            }}
           />
         </div>
         {/* Center: Map and Metrics */}
@@ -359,6 +363,10 @@ export default function UtilityDashboard() {
               }
               onClose={() => {}}
               onDDRComplete={() => setForceNormal(true)}
+              onGridNormalized={() => {
+                setStatusPhase("Normal");
+                setForceNormal(true);
+              }}
             />
           </div>
         </div>

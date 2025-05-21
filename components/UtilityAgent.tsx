@@ -26,6 +26,7 @@ interface UtilityAgentProps {
   initialMessage?: string;
   showAuditTrailMessages?: boolean;
   onDDRComplete?: () => void;
+  onGridNormalized?: () => void;
 }
 
 const conversationFlow = [
@@ -36,9 +37,10 @@ next 25 minutes.`,
   },
   {
     sender: "agent",
-    text: `Based on real-time aggregated capacities and historical response analytics, here are the available Grid Flexibility Programs: 
+    text: `Based on real-time aggregated capacities and historical response analytics, here are the available Grid Flexibility Programs
 
 **📗 Program 1: Dynamic Demand Response**  
+
 - Aggregated Capacity Available: 350 kW  
 - Asset Types: Residential (45%), Commercial and industrial (55%)  
 - Historical Response Rate: 89% compliance (last 6 months)  
@@ -57,13 +59,13 @@ next 25 minutes.`,
 - Event Reward: $10.00 per kWh curtailed  
 - Penalty: 50% annual fee reduction per missed event  
 - Category: Residential  
-- Minimum Meter Capacity: 5 kW`
+- Minimum Meter Capacity: 5 kW`,
   },
   {
     sender: "agent",
     text: `🔍 Recommendation: To achieve immediate grid relief with minimal disruption and high
-historical reliability, I recommend activating Program 1 – Dynamic Demand Response.\n
-\nWould you like to proceed?`,
+historical reliability, I recommend activating Program 1 – Dynamic Demand Response \n 
+ Would you like to proceed?`,
   },
   {
     sender: "user",
@@ -73,28 +75,27 @@ historical reliability, I recommend activating Program 1 – Dynamic Demand Resp
     sender: "agent",
     text: `Activating Program 1 – **Dynamic Demand Response (DDR).**
 
-Broadcasting flexibility requests to eligible meters. Please wait..`,
+Broadcasting flexibility requests to eligible meters \n 
+ Please wait..`,
   },
   {
     sender: "agent",
-    text: `**📊 Live Response Tracking**  
+    text: `**📊 Live Response Tracking**
     **Response Status (Number of Meters):**
-    
-    - ✅ Accepted: 38  
-    - ⏳ Pending: 5  
-    - ❌ Declined: 4  
-      - AQI Limits: 2  
-      - Unresponsive: 1  
-      - Consent Expired: 1`
+    - ✅ Accepted:38
+    - ⏳ Pending:5
+    - ❌ Declined:4
+    - AQI Limits:2
+    - Unresponsive:1
+    - Consent Expired:1`,
   },
   {
     sender: "agent",
     text: `✅ Final Response Summary  
-
-    - **Accepted**: 38 meters  
-    - **Declined**: 4 meters  
-    - **Pending (No Response)**: 5 meters (treated as declined)  
-    **Effective Capacity Activated**: 310 kW (**89%** of DDR capacity)`
+- Accepted: 38 meters \n  
+- Declined: 4 meters \n   
+- Pending (No Response): 5 meters (treated as declined) \n   
+Effective Capacity Activated: 310 kW (89% of DDR capacity)`,
   },
   {
     sender: "agent",
@@ -201,6 +202,7 @@ const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(({
   initialMessage,
   showAuditTrailMessages = false,
   onDDRComplete,
+  onGridNormalized,
 }, ref) => {
   const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -208,6 +210,7 @@ const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(({
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [inputEnabled, setInputEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [normalizationProgress, setNormalizationProgress] = useState(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -239,7 +242,7 @@ const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(({
           setStep((prev) => prev + 1);
           if (step === 2) setInputEnabled(true);
         },
-        step === 0 ? 50000 : 10000
+        step === 0 ? 15000 : 3000
       ); // 58 seconds for first message, 10 seconds for second
 
       return () => {
@@ -311,6 +314,30 @@ const UtilityAgent = forwardRef<unknown, UtilityAgentProps>(({
       };
     }
   }, [showAuditTrailMessages, messages, onDDRComplete]);
+
+  useEffect(() => {
+    // Check if the last message is about grid normalization
+    const lastMessage = messages[messages.length - 1];
+    if (
+      lastMessage &&
+      lastMessage.text.includes("Grid returning to optimal conditions")
+    ) {
+      // Start progress animation
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 1;
+        setNormalizationProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 600); // 600ms per 1% = 60 seconds total for 100%
+      // Call onGridNormalized if provided
+      if (typeof onGridNormalized === "function") {
+        onGridNormalized();
+      }
+      return () => clearInterval(interval);
+    }
+  }, [messages, onGridNormalized]);
 
   const handleSendMessage = () => {
     if (!inputText.trim() || !inputEnabled) return;
