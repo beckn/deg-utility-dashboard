@@ -24,6 +24,7 @@ interface ChartData {
 interface UtilityAgentProps {
   onClose?: () => void;
   initialMessage?: string;
+  showAuditTrailMessages?: boolean;
 }
 
 const conversationFlow = [
@@ -33,28 +34,9 @@ const conversationFlow = [
   },
   {
     sender: "agent",
-    text: `Based on the current stress levels, here are the available Demand Flexibility Program (DFP) options:\n
-### Option 1: Dynamic Demand Response (DDR)
-
-Dynamic Demand Response (DDR) rewards participants who can rapidly shift or curtail electricity usage during frequent, short-notice events. Participants receive the moderately high per-event compensation due to their ability to reliably and promptly adjust energy consumption patterns, significantly aiding grid stability and renewable energy integration.
-
-- **Reward:** $3–4.5 per kWh shifted  
-- **Bonus:** 15% extra if >90% compliance monthly  
-- **Penalty:** 15% reduction in incentives if compliance <75%  
-- **Category:** Residential  
-- **Minimum Load:** 5 kW  
-
----
-
-### Option 2: Emergency Demand Reduction (EDR)
-
-Emergency Demand Reduction (EDR) is designed for consumers who can rapidly curtail significant energy use during critical, rare grid emergencies. These are infrequent but urgent events requiring immediate action. Participants are compensated significantly for availability but face substantial penalties for non-compliance due to critical grid dependence.
-
-- **Reward:** $250/year per kW available  
-- **Bonus:** $10.00 per kWh curtailed during events  
-- **Penalty:** 50% annual availability fee reduction per missed event  
-- **Category:** Residential  
-- **Minimum Load:** 5 kW`,
+    text: `Based on the current stress levels, here are the available Demand Flexibility Program (DFP) options:\n\n**Option 1:**\n
+Dynamic Demand Response (DDR) rewards participants who can rapidly shift or curtail electricity usage during frequent, short-notice events. Participants receive the moderately high per-event compensation due to their ability to reliably and promptly adjust energy consumption patterns, significantly aiding grid stability and renewable energy integration.\n\n- **Reward:** $3–4.5 per kWh shifted  \n- **Bonus:** 15% extra if >90% compliance monthly  \n- **Penalty:** 15% reduction in incentives if compliance <75%  \n- **Category:** Residential  \n- **Minimum Load:** 5 kW  \n\n---\n\n**Option 2:**\n
+Emergency Demand Reduction (EDR) is designed for consumers who can rapidly curtail significant energy use during critical, rare grid emergencies. These are infrequent but urgent events requiring immediate action. Participants are compensated significantly for availability but face substantial penalties for non-compliance due to critical grid dependence.\n\n- **Reward:** $250/year per kW available  \n- **Bonus:** $10.00 per kWh curtailed during events  \n- **Penalty:** 50% annual availability fee reduction per missed event  \n- **Category:** Residential  \n- **Minimum Load:** 5 kW`,
   },
   {
     sender: "agent",
@@ -174,6 +156,7 @@ function autoFormatSummaryToMarkdown(plainText: string) {
 const UtilityAgent: React.FC<UtilityAgentProps> = ({
   onClose,
   initialMessage,
+  showAuditTrailMessages = false,
 }) => {
   const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -203,7 +186,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
         ]);
         setStep((prev) => prev + 1);
         if (step === 2) setInputEnabled(true);
-      }, 1200);
+      }, step === 0 ? 60000 : 10000); // 1 minute for first message, 10 seconds for second
       return () => clearTimeout(timer);
     }
   }, [step]);
@@ -223,9 +206,15 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
     );
     const hasLoadNormal = messages.some((m) => m.text === loadNormalText);
 
-    if (lastMsgIsProceeding && !hasDDRParticipation) {
-      // Add the DDR participation message after 5 seconds
+    if (
+      showAuditTrailMessages &&
+      lastMsgIsProceeding &&
+      !hasDDRParticipation &&
+      !hasLoadNormal
+    ) {
+      setIsAgentTyping(true);
       const timer1 = setTimeout(() => {
+        setIsAgentTyping(false);
         setMessages((prev) => [
           ...prev,
           {
@@ -237,26 +226,29 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
           },
         ]);
         setStep(6);
-        // Add the load normal message after another 5 seconds
-        const timer2 = setTimeout(() => {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString() + "7",
-              text: loadNormalText,
-              isUser: false,
-              timestamp: new Date(),
-              type: "agent",
-            },
-          ]);
-          setStep(7);
-        }, 5000);
-      }, 5000);
+        setTimeout(() => {
+          setIsAgentTyping(true);
+          setTimeout(() => {
+            setIsAgentTyping(false);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString() + "7",
+                text: loadNormalText,
+                isUser: false,
+                timestamp: new Date(),
+                type: "agent",
+              },
+            ]);
+            setStep(7);
+          }, 1200); // Typing animation for second message
+        }, 2000); // Wait 2 seconds before showing the second message
+      }, 1200); // Typing animation for first message
       return () => {
-        clearTimeout(timer1);
+        setIsAgentTyping(false);
       };
     }
-  }, [messages]);
+  }, [showAuditTrailMessages, messages]);
 
   const handleSendMessage = () => {
     if (!inputText.trim() || !inputEnabled) return;

@@ -36,6 +36,7 @@ export default function UtilityDashboard() {
     "profile" | "audit" | "controls"
   >("profile");
   const [mapZoom, setMapZoom] = useState(12);
+  const [showAuditTrailMessages, setShowAuditTrailMessages] = useState(false);
 
   // const { allAssets, systemMetrics, transformerSummaries } = useProcessedData();
 
@@ -196,7 +197,10 @@ export default function UtilityDashboard() {
       <div className="h-[calc(100vh-4rem)] flex flex-row p-2 gap-2 bg-background">
         {/* Left: Sidebar */}
         <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
-          <DashboardSidebar transformerSummaries={transformerSummaries} />
+          <DashboardSidebar 
+            transformerSummaries={transformerSummaries} 
+            onAuditTrailClick={() => setShowAuditTrailMessages(true)}
+          />
         </div>
         {/* Center: Map and Metrics */}
         <main className="flex-1 flex flex-col gap-2 min-w-0">
@@ -262,6 +266,7 @@ export default function UtilityDashboard() {
                   : "All transformers normal."
               }
               onClose={() => {}}
+              showAuditTrailMessages={showAuditTrailMessages}
             />
           </div>
         </div>

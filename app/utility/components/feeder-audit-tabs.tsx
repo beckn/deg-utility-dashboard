@@ -65,9 +65,10 @@ interface FeederAuditTabsProps {
     capacity?: number;
     status?: string;
   }>;
+  onAuditTrailClick?: () => void;
 }
 
-export function FeederAuditTabs({ feeders }: FeederAuditTabsProps) {
+export function FeederAuditTabs({ feeders, onAuditTrailClick }: FeederAuditTabsProps) {
   const [tab, setTab] = useState("feeder");
   return (
     <div className="w-full max-w-md mx-auto bg-[#181A20] rounded-2xl p-0 shadow-lg">
@@ -91,7 +92,10 @@ export function FeederAuditTabs({ feeders }: FeederAuditTabsProps) {
               : "bg-[#232B3E] text-white/70"
           }`}
           // style={{ borderTopRightRadius: 16 }}
-          onClick={() => setTab("audit")}
+          onClick={() => {
+            setTab("audit");
+            if (onAuditTrailClick) onAuditTrailClick();
+          }}
         >
           Audit Trail
         </button>
