@@ -105,7 +105,7 @@ export function DashboardHeader({
       {/* Side Modal */}
       {openModal && (
         <aside
-          className="fixed top-0 left-64 z-50 h-full min-w-[400px] max-w-full bg-card border-r border-border shadow-lg transform transition-transform duration-200"
+          className="fixed top-0 left-64 z-50 h-full min-w-[400px] max-w-full bg-card border-r border-border shadow-lg transform transition-transform duration-200 z-9999"
           style={{ transitionProperty: "transform" }}
           onClick={(e) => e.stopPropagation()}
         >
