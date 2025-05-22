@@ -95,6 +95,7 @@ export default function UtilityDashboard() {
                 >
                   <TabsList className="flex flex-row gap-2 px-1 py-1 bg-[#232e47] rounded-lg shadow border border-[#232e47]">
                     <TabsTrigger value="Transformers" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Feeders</TabsTrigger>
+                    <TabsTrigger value="EmergencyServices" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Emergency Services</TabsTrigger>
                     <TabsTrigger value="Substations" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Substations</TabsTrigger>
                     <TabsTrigger value="Households" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Households</TabsTrigger>
                   </TabsList>
