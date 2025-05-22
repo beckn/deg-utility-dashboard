@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Send, X, Minimize2, BarChart3, AlertTriangle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
+import rehypeRaw from 'rehype-raw';
 
 interface Message {
   id: string;
@@ -296,23 +298,55 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
     });
   };
 
+  const isHtml = (str: string) => /<([a-z][\w0-9]*)(\s[^>]*)?>[\s\S]*?<\/\1>/i.test(str.trim());
+
+  const unescapeHtml = (escaped: string) => {
+    if (!escaped) return '';
+    const doc = new window.DOMParser().parseFromString(escaped, 'text/html');
+    return doc.documentElement.textContent || '';
+  };
+
   // Render message content with or without markdown
   const renderMessageContent = (message: Message) => {
     if (message.isUser) {
       return message.text;
     }
-    
-    // For non-user messages, try to render markdown
-    try {
+
+    // If the message is pure HTML (not markdown), render as HTML
+    if (isHtml(message.text) && !message.text.match(/[\#\*_`>\-]/)) {
       return (
-        <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-1">
-          <ReactMarkdown>{message.text}</ReactMarkdown>
-        </div>
+        <div dangerouslySetInnerHTML={{ __html: message.text }} />
       );
-    } catch (error) {
-      console.error("Error rendering markdown:", error);
-      return message.text;
     }
+
+    // Otherwise, render as markdown (with inline HTML support)
+    return (
+      <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-1">
+        <ReactMarkdown
+          skipHtml={false}
+          rehypePlugins={[rehypeRaw]}
+          components={{
+            a: ({node, ...props}) => (
+              <a className="text-blue-500" {...props} />
+            ),
+            ul: ({node, ...props}) => (
+              <ul className="my-2 list-disc pl-4" {...props} />
+            ),
+            li: ({node, ...props}) => (
+              <li className="my-1" {...props} />
+            ),
+            h3: ({node, ...props}) => (
+              <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />
+            ),
+            p: ({node, ...props}) => (
+              <p className="my-2" {...props} />
+            )
+          }}
+        >
+          {message.text}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   // Get message class based on type
@@ -372,7 +406,7 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
               </span>
               <span className="text-xs text-muted-foreground">
                 {/* @ts-ignore */}
-                {message.timestamp.toLocaleString('en-US', {
+                {new Date(message.timestamp).toLocaleString('en-US', {
                   hour: '2-digit',
                   minute: '2-digit',
                   hour12: true
