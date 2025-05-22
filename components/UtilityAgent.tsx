@@ -204,10 +204,10 @@ const UtilityAgent: React.FC<UtilityAgentProps> = ({
                 {message.isUser ? "You" : "Grid Agent"}
               </span>
               <span className="text-xs text-muted-foreground">
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
+                {message.timestamp.toLocaleString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
                 })}
               </span>
             </div>

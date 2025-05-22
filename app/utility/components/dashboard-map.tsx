@@ -54,6 +54,8 @@ export function DashboardMap({
         return asset.type === "transformer";
       case "Households":
         return asset.type === "household";
+      case "EmergencyServices":
+        return asset.type === "transformer" && asset.emergencyService;
       default:
         return false;
     }
