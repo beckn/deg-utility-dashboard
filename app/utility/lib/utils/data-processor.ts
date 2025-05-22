@@ -31,6 +31,7 @@ export const simplifyUtilData = (data: StrapiApiRoot): SimplifiedData => {
           const meterWithTransformer = {
             ...meter
           };
+          // @ts-ignore
           meters.push(meterWithTransformer);
         });
       });
