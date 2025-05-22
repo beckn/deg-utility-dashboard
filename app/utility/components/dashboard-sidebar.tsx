@@ -46,22 +46,22 @@ export function DashboardSidebar({
     }
   }, [auditTrail, tab, isFirstAuditLoad]);
 
-  // useEffect(() => {
-  //   if (tab === "audit") {
-  //     const fetchData = async () => {
-  //       await fetchAuditTrails();
-  //     };
+  useEffect(() => {
+    if (tab === "audit") {
+      const fetchData = async () => {
+        await fetchAuditTrails();
+      };
 
-  //     fetchData();
+      fetchData();
 
-  //     const auditTrailInterval = setInterval(
-  //       () => fetchAuditTrails(false),
-  //       5000
-  //     );
+      const auditTrailInterval = setInterval(
+        () => fetchAuditTrails(false),
+        5000
+      );
 
-  //     return () => clearInterval(auditTrailInterval);
-  //   }
-  // }, [fetchAuditTrails, tab]);
+      return () => clearInterval(auditTrailInterval);
+    }
+  }, [fetchAuditTrails, tab]);
 
   return (
     <aside className="w-full h-full flex flex-col bg-card p-0 rounded-lg border border-border shadow-lg">
