@@ -6,7 +6,6 @@ import { ProfilePanel } from "./profile-panel";
 import { AuditLogsPanel } from "./audit-logs-panel";
 import { ControlsPanel } from "./controls-panel";
 
-
 interface DashboardHeaderProps {
   onSelectPanel: (panel: "profile" | "audit" | "controls") => void;
   activePanel: "profile" | "audit" | "controls";
@@ -24,8 +23,8 @@ export function DashboardHeader({
 
   return (
     <>
-    {/* Sidebar Overlay */}
-    {sidebarOpen && (
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
         <div
           className="fixed inset-0 z-40  bg-opacity-40 transition-opacity"
           onClick={() => setSidebarOpen(false)}
@@ -125,10 +124,13 @@ export function DashboardHeader({
           </div>
         </aside>
       )}
-    <header className="h-16 flex items-center justify-between px-6 bg-card border-b border-border shadow-sm">
-      <div className="flex items-center gap-4">
+      <header className="h-16 flex items-center justify-between px-6 bg-card border-b border-border shadow-sm">
+        <span className="text-xl font-semibold tracking-tight text-primary">
+          Utility Administration Portal
+        </span>
+        {/* <div className="flex items-center gap-4"> */}
         {/* Hamburger Menu */}
-        <button
+        {/* <button
             className="p-2 rounded-md hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open sidebar"
@@ -138,10 +140,10 @@ export function DashboardHeader({
           <span className="text-xl font-semibold tracking-tight text-primary">
             Utility Administration Portal
           </span>
-      </div>
-      <div className="flex items-center gap-4">
-        {/* Theme Toggle */}
-        {/* <div className="flex items-center gap-2">
+      </div> */}
+        <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          {/* <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">🌞</span>
           <Switch
             checked={theme === "dark"}
@@ -150,12 +152,14 @@ export function DashboardHeader({
           />
           <span className="text-xs text-muted-foreground">🌙</span>
         </div> */}
-        {/* Avatar or user icon can go here */}
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <span role="img" aria-label="avatar">👤</span>
+          {/* Avatar or user icon can go here */}
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <span role="img" aria-label="avatar">
+              👤
+            </span>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
     </>
-  )
+  );
 }
