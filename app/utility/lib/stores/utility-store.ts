@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { strapiClient } from "../api/strapi-client";
 import {
+  simplifyAuditTrailData,
   simplifyUtilData,
   simplifyUtilDataForDashboard,
 } from "../utils/data-processor";
@@ -11,23 +12,28 @@ import type {
   MeterWithTransformer,
   StrapiTransformer,
   TransformerWithSubstation,
+  StrapiAuditTrail,
+  SimplifiedAuditTrail,
 } from "../types";
 
 type SimplifiedDataState = {
   data: SimplifiedData;
   transformerData: StrapiTransformer[];
+  auditTrail: SimplifiedAuditTrail[];
   setData: (data: SimplifiedData) => void;
   clear: () => void;
   fetchAndStore: () => Promise<void>;
   selectedHouse: MeterWithTransformer | null;
   setSelectedHouse: (house: MeterWithTransformer | null) => void;
   isLoading: boolean;
+  isAuditTrailLoading: boolean;
   updateDerSettings: (
     meterId: number,
     newDersSettings: Array<{ id: number; isEnabled: boolean }>
   ) => void;
   fetchAndStoreTransformerData: (transformerId: number) => Promise<void>;
   startStream: (transformerId: number) => Promise<void>;
+  fetchAndStoreAuditTrail: () => Promise<void>;
 };
 
 export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
@@ -36,13 +42,18 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
       substations: [],
       transformers: [],
       meters: [],
+      auditTrail: [],
     },
     selectedHouse: null,
     isLoading: false,
+    isAuditTrailLoading: false,
     transformerData: [],
+    auditTrail: [],
     setSelectedHouse: (house) => set({ selectedHouse: house }),
 
     setData: (data) => set({ data }),
+
+    setAuditTrail: (auditTrail: SimplifiedAuditTrail[]) => set({ auditTrail }),
 
     clear: () =>
       set({ data: { substations: [], transformers: [], meters: [] } }),
@@ -90,27 +101,26 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
     },
 
     fetchAndStoreTransformerData: async (transformerId: number) => {
-      get().startStream(transformerId);
+      try {
+        get().startStream(transformerId);
+      } catch (error) {
+        console.error("Error fetching transformer data:", error);
+      }
     },
 
     startStream: async (transformerId: number) => {
+      set({ isLoading: true });
       const url = `https://playground.becknprotocol.io/meter-data-simulator/transformer-load-streamed/${transformerId}`;
-      const reconnectDelay = 5000;
-      let reconnectAttempts = 0;
-      const maxReconnects = 5;
-      let abortController: AbortController | null = null;
 
       const connect = async () => {
         try {
-          // Cancel any existing connection
-          if (abortController) {
-            abortController.abort();
-          }
-
-          // Create new abort controller for this connection
-          abortController = new AbortController();
-
-          const response = await fetch(url);
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Connection': 'keep-alive'
+            }
+          });
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -156,17 +166,21 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
                       status: newObj.health_status,
                       currentLoad: newObj.load_percentage,
                       margin: newObj.margin_percentage,
+                      emergencyService: newObj?.transformer?.emergency_service || false,
                     } as TransformerWithSubstation;
 
                     set((state) => {
-                      const filtered = state.data.transformers.filter(
-                        (t) => t.id !== newTransformerData.id
-                      );
+                      const transformers = [...state.data.transformers];
+                      const index = transformers.findIndex(t => t.id === newTransformerData.id);
+                      if (index !== -1) {
+                        transformers[index] = newTransformerData;
+                      } else {
+                        transformers.push(newTransformerData);
+                      }
                       return {
                         data: {
-                          substations: state.data.substations,
-                          transformers: [...filtered, newTransformerData],
-                          meters: state.data.meters,
+                          ...state.data,
+                          transformers,
                         },
                       };
                     });
@@ -182,12 +196,17 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
                 return;
               }
               console.error("Error reading chunk:", error);
+              connect();
+              throw error;
             }
           };
 
           return readChunk();
         } catch (err) {
           console.error("Connection error");
+          connect();
+        } finally {
+          set({ isLoading: false });
         }
       };
 
@@ -215,6 +234,42 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
           },
         };
       });
+    },
+
+    fetchAndStoreAuditTrail: async () => {
+      set({ isAuditTrailLoading: true });
+      const url = "https://bpp-unified-strapi-deg.becknprotocol.io/unified-beckn-energy/audit-trail";
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Connection': 'keep-alive'
+        }
+      });
+
+      if (!response.ok) {
+        console.error("Error fetching audit trail data from Strapi:", response.statusText);
+        set({
+          auditTrail: [],
+          isAuditTrailLoading: false,
+        });
+        return;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        const simplified = simplifyAuditTrailData(data);
+        set({
+          auditTrail: simplified,
+          isAuditTrailLoading: false,
+        });
+      } else {
+        console.error("Fetched data is null or not in expected format (missing audit trail array)");
+        set({
+          auditTrail: [],
+          isAuditTrailLoading: false,
+        });
+      }
     },
   })
 );

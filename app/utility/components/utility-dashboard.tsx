@@ -16,12 +16,16 @@ import { useProcessedData } from "../lib/hooks/use-processed-data"
 import type { MeterWithTransformer } from "../lib/types"
 
 export default function UtilityDashboard() {
-  const { fetchAndStore, fetchAndStoreTransformerData, isLoading, selectedHouse, setSelectedHouse, transformerData } = useSimplifiedUtilDataStore()
+  const { fetchAndStore, fetchAndStoreTransformerData, isLoading, selectedHouse, setSelectedHouse, transformerData, auditTrail, fetchAndStoreAuditTrail } = useSimplifiedUtilDataStore()
   const [isAgentOpen, setIsAgentOpen] = useState(false)
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState("Transformers")
+  const [activePanel, setActivePanel] = useState<
+    "profile" | "audit" | "controls"
+  >("profile");
 
-  const { allAssets, systemMetrics, transformerSummaries, } = useProcessedData()
+  const { allAssets, transformerSummaries } = useProcessedData()
+
 
   useEffect(() => {
     fetchAndStore()
@@ -60,11 +64,14 @@ export default function UtilityDashboard() {
 
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground">
-      <DashboardHeader />
+      <DashboardHeader
+      onSelectPanel={setActivePanel}
+      activePanel={activePanel}
+      />
       <div className="h-[calc(100vh-4rem)] flex flex-row p-2 gap-2 bg-background">
         {/* Left: Sidebar */}
         <div className="w-[340px] min-w-[280px] max-w-xs flex-shrink-0 bg-card rounded-lg shadow border border-border">
-          <DashboardSidebar transformerSummaries={transformerSummaries} />
+          <DashboardSidebar transformerSummaries={transformerSummaries} auditTrail={auditTrail} fetchAuditTrails={fetchAndStoreAuditTrail} />
         </div>
         {/* Center: Map and Metrics */}
         <main className="flex-1 flex flex-col gap-2 min-w-0">
@@ -88,6 +95,7 @@ export default function UtilityDashboard() {
                 >
                   <TabsList className="flex flex-row gap-2 px-1 py-1 bg-[#232e47] rounded-lg shadow border border-[#232e47]">
                     <TabsTrigger value="Transformers" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Feeders</TabsTrigger>
+                    <TabsTrigger value="EmergencyServices" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Emergency Services</TabsTrigger>
                     <TabsTrigger value="Substations" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Substations</TabsTrigger>
                     <TabsTrigger value="Households" className="custom-tab px-4 py-1 font-semibold rounded text-white transition-colors cursor-pointer">Households</TabsTrigger>
                   </TabsList>
