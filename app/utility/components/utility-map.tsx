@@ -22,13 +22,15 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) {
     type: AssetType,
     status: "Critical" | "Warning" | "Normal" = "Normal"
   ) => {
+    let localType = type;
     let iconColor = "#2463EB"; // Default blue (Normal)
     let symbol = "❓";
+    let showAnimate = false;
 
     if (status === "Critical") iconColor = "#ef4444"; // Red
     else if (status === "Warning") iconColor = "#f59e0b"; // Yellow
 
-    switch (type) {
+    switch (localType) {
       case "substation":
         symbol = "⚡"; // Lightning for substation
         break;
@@ -39,23 +41,28 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) {
             ? "#ef4444"
             : status === "Warning"
             ? "#f59e0b"
-            : "#3b82f6"; // Blue for normal transformer #2463EB
+            : "#10b981"; // Blue for normal transformer #2463EB
+        showAnimate = status === "Critical";
         break;
       case "household":
         symbol = "🏠"; // House for household
+        break;
+      case "transformer_emergency_service":
+        symbol = "🚨"; // Emergency service for emergency service
         iconColor =
           status === "Critical"
             ? "#ef4444"
             : status === "Warning"
             ? "#f59e0b"
-            : "#2463EB"; // Green for normal household
+            : "#10b981"; // "#DB4437" Blue for normal transformer #2463EB
+        showAnimate = status === "Critical";
         break;
       default:
         symbol = "📍"; // Default pin
         break;
     }
 
-    const iconDetails = GetCustomMapMarker({ type, color: iconColor });
+    const iconDetails = GetCustomMapMarker({ type, color: iconColor, showAnimate });
     return new Icon(iconDetails as BaseIconOptions);
   };
 
@@ -93,7 +100,7 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) {
             asset.status
           )}
         >
-          <Popup>
+          {['transformer'].includes(asset.type) && <Popup>
             <div className="p-2 min-w-[200px]">
               <h3 className="font-semibold text-gray-800 mb-1 text-base">
                 {asset.name}
@@ -141,7 +148,7 @@ export function UtilityMap({ assets, onSelectMeter }: UtilityMapProps) {
                 </div>
               )} */}
             </div>
-          </Popup>
+          </Popup>}
         </Marker>
       ))}
     </MapContainer>

@@ -5,13 +5,10 @@ import { Loader2 } from "lucide-react"
 import { useSimplifiedUtilDataStore } from "../lib/stores/utility-store"
 import { DashboardHeader } from "./dashboard-header"
 import { DashboardSidebar } from "./dashboard-sidebar"
-import { DashboardMetrics } from "./dashboard-metrics"
 import { DashboardMap } from "./dashboard-map"
 import { ControlPanel } from "./control-panel"
-import { Button } from "@/components/ui/button"
 import UtilityAgent from "@/components/UtilityAgent"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProcessedData } from "../lib/hooks/use-processed-data"
 import type { MeterWithTransformer } from "../lib/types"
 
@@ -78,14 +75,7 @@ export default function UtilityDashboard() {
           {/* <DashboardMetrics metrics={systemMetrics} /> */}
           <section className="flex-1 p-3 bg-card rounded-lg shadow border border-border flex flex-col min-h-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
-              <Select defaultValue="San Francisco">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select Region" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="San Francisco">San Francisco</SelectItem>
-                </SelectContent>
-              </Select>
+              
               <div className="w-full flex justify-end">
                 <Tabs
                   defaultValue="Transformers"

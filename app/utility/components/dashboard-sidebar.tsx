@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type {
   TransformerSummaryItem,
   SimplifiedAuditTrail,
@@ -12,7 +12,7 @@ import { useSimplifiedUtilDataStore } from "../lib/stores/utility-store";
 interface DashboardSidebarProps {
   transformerSummaries: TransformerSummaryItem[];
   auditTrail: SimplifiedAuditTrail[];
-  fetchAuditTrails: () => Promise<void>;
+  fetchAuditTrails: (loader?: boolean) => Promise<void>;
 }
 
 export function DashboardSidebar({
@@ -23,10 +23,43 @@ export function DashboardSidebar({
   const [tab, setTab] = useState<"feeder" | "audit">("feeder");
   const { isLoading: isFeederSummaryLoading, isAuditTrailLoading } =
     useSimplifiedUtilDataStore();
+  const [highlightedIds, setHighlightedIds] = useState<number[]>([]);
+  const prevAuditTrailRef = useRef<typeof auditTrail>([]);
+  const [isFirstAuditLoad, setIsFirstAuditLoad] = useState(true);
 
   useEffect(() => {
     if (tab === "audit") {
-      fetchAuditTrails();
+      if (isFirstAuditLoad && auditTrail.length > 0) {
+        prevAuditTrailRef.current = auditTrail;
+        setIsFirstAuditLoad(false);
+        return;
+      }
+      const prevIds = new Set(prevAuditTrailRef.current.map(item => item.id));
+      const newItems = auditTrail.filter(item => !prevIds.has(item.id));
+      if (newItems.length > 0) {
+        setHighlightedIds(ids => [...ids, ...newItems.map(item => item.id)]);
+        setTimeout(() => {
+          setHighlightedIds(ids => ids.filter(id => !newItems.map(item => item.id).includes(id)));
+        }, 3000);
+      }
+      prevAuditTrailRef.current = auditTrail;
+    }
+  }, [auditTrail, tab, isFirstAuditLoad]);
+
+  useEffect(() => {
+    if (tab === "audit") {
+      const fetchData = async () => {
+        await fetchAuditTrails();
+      };
+
+      fetchData();
+
+      const auditTrailInterval = setInterval(
+        () => fetchAuditTrails(false),
+        5000
+      );
+
+      return () => clearInterval(auditTrailInterval);
     }
   }, [fetchAuditTrails, tab]);
 
@@ -121,61 +154,68 @@ export function DashboardSidebar({
               <div className="space-y-3 mt-2">
                 {auditTrail.length > 0 ? (
                   auditTrail.map((item) => (
-                    <div key={item.id}>
+                    <div
+                      key={item.id}
+                      className={`relative transition-all duration-500 ${
+                        highlightedIds.includes(item.id)
+                          ? 'bg-green-300/30 animate-pulse ring-2 ring-green-400 border border-green-400 rounded-lg'
+                          : ''
+                      }`}
+                    >
                       <div className="pt-3 pb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3
-                            className="font-semibold text-foreground text-base truncate"
-                            title={item.name}
-                          >
-                            {item.name.length > 22
-                              ? `${item.name.slice(0, 22)}...`
-                              : item.name}
-                          </h3>
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>
-                            Meter ID :{" "}
-                            <span className="truncate">
-                              {item.meterId.toString().length > 10
-                                ? `${item.meterId.toString().slice(0, 10)}...`
-                                : item.meterId.toString()}
-                            </span>
+                      <div className="flex items-center justify-between mb-1">
+                        <h3
+                          className="font-semibold text-foreground text-base truncate"
+                          title={item.name}
+                        >
+                          {item.name.length > 22
+                            ? `${item.name.slice(0, 22)}...`
+                            : item.name}
+                        </h3>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>
+                          Meter ID :{" "}
+                          <span className="truncate">
+                            {item.meterId.toString().length > 10
+                              ? `${item.meterId.toString().slice(0, 10)}...`
+                              : item.meterId.toString()}
                           </span>
-                          <span>
-                            Order ID :{" "}
-                            <span className="truncate">
-                              {item.orderId.toString().length > 10
-                                ? `${item.orderId.toString().slice(0, 10)}...`
-                                : item.orderId.toString()}
-                            </span>
+                        </span>
+                        <span>
+                          Order ID :{" "}
+                          <span className="truncate">
+                            {item.orderId.toString().length > 10
+                              ? `${item.orderId.toString().slice(0, 10)}...`
+                              : item.orderId.toString()}
                           </span>
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Current Consumption (kWh): </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-foreground font-semibold">
-                              {item.consumption}
-                            </span>
-                            <span
-                              className={
-                                item.up ? "text-red-400" : "text-green-400"
-                              }
-                            >
-                              {item.percent}% {item.up ? "↑" : "↓"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>DFP Accepted: </span>
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Current Consumption (kWh): </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-foreground font-semibold">
+                            {item.consumption}
+                          </span>
                           <span
                             className={
-                              item.accepted ? "text-green-400" : "text-red-400"
+                              item.up ? "text-red-400" : "text-green-400"
                             }
                           >
-                            {item.accepted ? "True" : "False"}
+                            {item.percent}% {item.up ? "↑" : "↓"}
                           </span>
                         </div>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>DFP Accepted: </span>
+                        <span
+                          className={
+                            item.accepted ? "text-green-400" : "text-red-400"
+                          }
+                        >
+                          {item.accepted ? "True" : "False"}
+                        </span>
+                      </div>
                       </div>
                       <div className="border-t-2 border-border mt-2"></div>
                     </div>

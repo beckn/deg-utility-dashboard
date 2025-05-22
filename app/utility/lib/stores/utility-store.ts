@@ -33,7 +33,7 @@ type SimplifiedDataState = {
   ) => void;
   fetchAndStoreTransformerData: (transformerId: number) => Promise<void>;
   startStream: (transformerId: number) => Promise<void>;
-  fetchAndStoreAuditTrail: () => Promise<void>;
+  fetchAndStoreAuditTrail: (loader?: boolean) => Promise<void>;
 };
 
 export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
@@ -236,8 +236,8 @@ export const useSimplifiedUtilDataStore = create<SimplifiedDataState>(
       });
     },
 
-    fetchAndStoreAuditTrail: async () => {
-      set({ isAuditTrailLoading: true });
+    fetchAndStoreAuditTrail: async (loader: boolean = true) => {
+      set({ isAuditTrailLoading: loader });
       const url = "https://bpp-unified-strapi-deg.becknprotocol.io/unified-beckn-energy/audit-trail";
       const response = await fetch(url, {
         method: 'GET',

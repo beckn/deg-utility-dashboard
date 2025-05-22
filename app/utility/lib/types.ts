@@ -224,6 +224,7 @@ export interface StrapiAuditTrail {
   current_consumption_kwh: number;
   consumption_change_percentage: number;
   up: boolean;
+  created_at: string;
 }
 
 export interface SimplifiedAuditTrail {
@@ -235,4 +236,5 @@ export interface SimplifiedAuditTrail {
   percent: number;
   up: boolean;
   accepted: boolean;
+  timestamp: string;
 }

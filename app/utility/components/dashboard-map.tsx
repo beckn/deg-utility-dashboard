@@ -61,12 +61,12 @@ export function DashboardMap({
     }
   });
 
-  return filteredAssets.length > 0 ? (
+  return (
     <DynamicUtilityMap
       assets={filteredAssets}
       onSelectMeter={onSelectMeter}
     />
-  ) : (
-    <LoadingMap />
+  // ) : (
+  //   <LoadingMap />
   );
 }

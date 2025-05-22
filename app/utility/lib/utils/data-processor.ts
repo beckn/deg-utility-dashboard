@@ -55,6 +55,7 @@ export const simplifyAuditTrailData = (data: StrapiApiRoot): SimplifiedAuditTrai
     consumption: item.current_consumption_kwh,
     percent: Math.abs(item.consumption_change_percentage),
     up: item.consumption_change_percentage > 0 ? false : true,
-    accepted: item.dfp_accepted
+    accepted: item.dfp_accepted,
+    timestamp: item.created_at,
   }))
 }
