@@ -63,6 +63,7 @@ export function DashboardSidebar({
     }
   }, [fetchAuditTrails, tab]);
 
+
   return (
     <aside className="w-full h-full flex flex-col bg-card p-0 rounded-lg border border-border shadow-lg">
       {/* Sticky Tabs */}
